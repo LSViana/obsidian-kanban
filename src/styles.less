@@ -1948,6 +1948,14 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
       padding-inline: 0;
     }
   }
+
+  // Obsidian's editor search bar (Ctrl+F). Keep it visible while the card text scrolls.
+  .document-search-container {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 0 var(--size-4-2);
+  }
 }
 
 .kanban-plugin__card-modal-metadata:empty {

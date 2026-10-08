@@ -285,6 +285,7 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
 
   const [modal, setModal] = useState<CardModal | null>(null);
   const editorRef = useRef<EditorView>(null);
+  const searchRef = useRef<((replace?: boolean) => void) | null>(null);
   const pendingTextRef = useRef<string | null>(null);
   const lastSavedRef = useRef<string>(item.data.titleRaw);
   const timerRef = useRef<number | null>(null);
@@ -435,6 +436,13 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
           </button>
         )}
         <button
+          className={`clickable-icon ${c('card-modal-action')}`}
+          aria-label={t('Search in card')}
+          onClick={() => searchRef.current?.(false)}
+        >
+          <Icon name="lucide-search" />
+        </button>
+        <button
           className={`${c('card-modal-action')} ${c('card-modal-close')}`}
           aria-label={t('Close')}
           onClick={closeModal}
@@ -446,6 +454,7 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
         <div className={`${c('item-input-wrapper')} ${c('card-modal-editor')}`}>
           <MarkdownEditor
             editorRef={editorRef}
+            searchRef={searchRef}
             editState={EditingState.cancel}
             className={c('item-input')}
             value={item.data.titleRaw}

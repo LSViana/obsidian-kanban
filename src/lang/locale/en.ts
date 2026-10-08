@@ -237,6 +237,7 @@ const en = {
   'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.':
     'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.',
   'Open linked note': 'Open linked note',
+  'Search in card': 'Search in card',
   'This card no longer exists. Your text was copied to the clipboard.':
     'This card no longer exists. Your text was copied to the clipboard.',
   'This card was changed somewhere else while it was open. Your version was saved.':

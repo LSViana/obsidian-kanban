@@ -107,6 +107,8 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
           setSearchQuery(data.data);
           setDebouncedSearchQuery(data.data);
         } else {
+          // The card pop-up handles this hotkey with its own search bar.
+          if (view.getWindow().document.querySelector(`.${c('card-modal-container')}`)) return;
           setIsSearching((val) => !val);
         }
       }

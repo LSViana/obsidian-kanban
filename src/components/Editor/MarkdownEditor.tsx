@@ -16,6 +16,9 @@ import { matchDateTrigger, matchTimeTrigger } from './suggest';
 
 interface MarkdownEditorProps {
   editorRef?: MutableRefObject<EditorView>;
+  // When set, Obsidian's "Search current file" commands open the editor's own search bar
+  // for this editor, and the ref receives a function that opens it.
+  searchRef?: MutableRefObject<((replace?: boolean) => void) | null>;
   editState?: EditState;
   onEnter: (cm: EditorView, mod: boolean, shift: boolean) => boolean;
   onEscape: (cm: EditorView) => void;
@@ -97,6 +100,7 @@ function getVimPlugin(cm: EditorView): string {
 
 export function MarkdownEditor({
   editorRef,
+  searchRef,
   onEnter,
   onEscape,
   onChange,
@@ -227,6 +231,12 @@ export function MarkdownEditor({
 
     controller.editMode = editor;
     editor.set(value || '');
+
+    if (searchRef && typeof editor.showSearch === 'function') {
+      controller.showSearch = (replace = false) => editor.showSearch(replace);
+      searchRef.current = controller.showSearch;
+    }
+
     if (isEditing(editState)) {
       cm.dispatch({
         userEvent: 'select.pointer',
@@ -260,9 +270,12 @@ export function MarkdownEditor({
           view.contentEl.removeClass('is-mobile-editing');
         }
       }
+      // An open search bar pushes its own key scope. Drop it so keys keep working after close.
+      if (editor.search?.isActive) editor.search.applyScope?.(null);
       view.plugin.removeChild(editor);
       internalRef.current = null;
       if (editorRef) editorRef.current = null;
+      if (searchRef) searchRef.current = null;
     };
   }, []);
 
