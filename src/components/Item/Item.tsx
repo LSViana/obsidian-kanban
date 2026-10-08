@@ -68,21 +68,50 @@ const ItemInner = memo(function ItemInner({
 
   // Clicking outside a card being edited saves the edit, same as pressing Enter.
   // Popups that belong to the editor (suggestions, date pickers, menus, modals) are ignored.
-  const clickOutsideRef = useOnclickOutside(
+  const outsideClickIgnoreClasses = [
+    c('ignore-click-outside'),
+    'mobile-toolbar',
+    'suggestion-container',
+    'menu',
+    'modal-container',
+  ];
+  const libraryClickOutsideRef = useOnclickOutside(
     () => {
       if (isEditing(editState)) setEditState(EditingState.complete);
     },
     {
       disabled: !isEditing(editState),
-      ignoreClass: [
-        c('ignore-click-outside'),
-        'mobile-toolbar',
-        'suggestion-container',
-        'menu',
-        'modal-container',
-      ],
+      ignoreClass: outsideClickIgnoreClasses,
     }
   );
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const clickOutsideRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      wrapperRef.current = el;
+      libraryClickOutsideRef(el);
+    },
+    [libraryClickOutsideRef]
+  );
+
+  // The handler above never sees presses on other cards or list headers: their drag handles
+  // cancel mousedown and stop the event. Listening in the capture phase catches those too,
+  // so only one card stays in edit mode.
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!isEditing(editState) || !el) return;
+
+    const ignoreSelector = outsideClickIgnoreClasses.map((cls) => `.${cls}`).join(',');
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (!target?.closest || el.contains(target) || target.closest(ignoreSelector)) return;
+      setEditState(EditingState.complete);
+    };
+
+    const win = el.win;
+    win.addEventListener('pointerdown', onPointerDown, true);
+    return () => win.removeEventListener('pointerdown', onPointerDown, true);
+  }, [editState]);
 
   useEffect(() => {
     if (item.data.forceEditMode) {
