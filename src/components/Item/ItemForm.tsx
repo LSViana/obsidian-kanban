@@ -21,8 +21,23 @@ export function ItemForm({ addItems, editState, setEditState, hideButton }: Item
   const editorRef = useRef<EditorView>();
 
   const clear = () => setEditState(EditingState.cancel);
-  const clickOutsideRef = useOnclickOutside(clear, {
-    ignoreClass: [c('ignore-click-outside'), 'mobile-toolbar', 'suggestion-container'],
+
+  // Clicking outside keeps what was typed: a non-empty form becomes a new card, then closes.
+  const saveAndClose = () => {
+    const title = editorRef.current?.state.doc.toString() ?? '';
+    if (title.trim()) addItems([stateManager.getNewItem(title, ' ')]);
+    clear();
+  };
+
+  const clickOutsideRef = useOnclickOutside(saveAndClose, {
+    disabled: !isEditing(editState),
+    ignoreClass: [
+      c('ignore-click-outside'),
+      'mobile-toolbar',
+      'suggestion-container',
+      'menu',
+      'modal-container',
+    ],
   });
 
   const createItem = (title: string) => {
