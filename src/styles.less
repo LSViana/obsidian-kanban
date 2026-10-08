@@ -2286,3 +2286,15 @@ body:has(.kanban-plugin__card-modal-container) {
 .kanban-plugin.is-dragging-group .kanban-plugin__item.is-selected {
   opacity: 0.35;
 }
+
+// Alt+drag copies (K26): copy cursor, and selected cards don't fade since they stay put
+body:has(.kanban-plugin__drag-container.is-copy),
+body:has(.kanban-plugin__drag-container.is-copy) * {
+  cursor: copy !important;
+}
+
+body:has(.kanban-plugin__drag-container.is-copy)
+  .kanban-plugin.is-dragging-group
+  .kanban-plugin__item.is-selected {
+  opacity: 1;
+}

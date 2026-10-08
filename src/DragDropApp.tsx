@@ -5,8 +5,9 @@ import { JSX, createPortal, memo, useCallback, useMemo } from 'preact/compat';
 import { KanbanView } from './KanbanView';
 import { DraggableItem } from './components/Item/Item';
 import { DraggableLane } from './components/Lane/Lane';
-import { getDragGroup } from './components/Selection/SelectionManager';
-import { moveSelectionTo } from './components/Selection/groupMove';
+import { getDragGroup, getSelection } from './components/Selection/SelectionManager';
+import { copySelectionTo, moveSelectionTo } from './components/Selection/groupMove';
+import { useCopyModifier } from './components/Selection/useCopyModifier';
 import { KanbanContext } from './components/context';
 import { c, maybeCompleteForMove } from './components/helpers';
 import { Board, DataTypes, Item, Lane } from './components/types';
@@ -40,6 +41,7 @@ const View = memo(function View({ view }: { view: KanbanView }) {
 export function DragDropApp({ win, plugin }: { win: Window; plugin: KanbanPlugin }) {
   const views = plugin.useKanbanViews(win);
   const portals: JSX.Element[] = views.map((view) => <View key={view.id} view={view} />);
+  const { isCopyRef, isCopy } = useCopyModifier(win);
 
   const handleDrop = useCallback(
     (dragEntity: Entity, dropEntity: Entity) => {
@@ -114,6 +116,24 @@ export function DragDropApp({ win, plugin }: { win: Window; plugin: KanbanPlugin
         // Dragging one of several selected cards moves the whole selection
         if (dragEntityData.type === DataTypes.Item && dropPath.length === 2) {
           const group = getDragGroup(view.id, dragEntityData.id);
+
+          // Alt (Option) at drop time copies the dragged card, or the whole selection
+          if (isCopyRef.current) {
+            let copyIds: string[] = [];
+            stateManager.setState((board) => {
+              const result = copySelectionTo(
+                stateManager,
+                board,
+                group ?? new Set([dragEntityData.id]),
+                dropPath
+              );
+              copyIds = result.copyIds;
+              return result.board;
+            });
+            if (copyIds.length) getSelection(view.id)?.set(copyIds);
+            return;
+          }
+
           if (group) {
             return stateManager.setState((board) =>
               moveSelectionTo(stateManager, board, group, dropPath)
@@ -268,7 +288,7 @@ export function DragDropApp({ win, plugin }: { win: Window; plugin: KanbanPlugin
         }
       });
     },
-    [views]
+    [views, isCopyRef]
   );
 
   if (portals.length)
@@ -336,15 +356,19 @@ export function DragDropApp({ win, plugin }: { win: Window; plugin: KanbanPlugin
 
             if (data?.type === DataTypes.Item) {
               const group = context ? getDragGroup(context.view.id, data.id) : null;
+              const badge = isCopy ? `+${group?.size ?? 1}` : group?.size;
 
               return (
                 <KanbanContext.Provider value={context}>
                   <div
-                    className={classcat([c('drag-container'), { [c('drag-group')]: !!group }])}
+                    className={classcat([
+                      c('drag-container'),
+                      { [c('drag-group')]: !!group, 'is-copy': isCopy },
+                    ])}
                     style={styles}
                   >
                     <DraggableItem item={data as Item} itemIndex={0} isStatic={true} />
-                    {group && <span className={c('drag-group-count')}>{group.size}</span>}
+                    {badge && <span className={c('drag-group-count')}>{badge}</span>}
                   </div>
                 </KanbanContext.Provider>
               );

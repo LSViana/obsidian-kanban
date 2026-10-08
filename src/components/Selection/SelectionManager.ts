@@ -107,6 +107,10 @@ export function getDragGroup(viewId: string, itemId: string): Set<string> | null
   return selection.getIds();
 }
 
+export function getSelection(viewId: string): SelectionManager | null {
+  return selectionByView.get(viewId) ?? null;
+}
+
 // Selected cards that still exist, in board order (list by list, top to bottom)
 export function resolveSelection(board: Board, ids: Set<string>): SelectedItem[] {
   const result: SelectedItem[] = [];
