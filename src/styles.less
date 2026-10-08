@@ -907,12 +907,6 @@ button.kanban-plugin__new-item-button {
   margin-inline: 0 3px;
 }
 
-.kanban-plugin__item-tag.is-search-match,
-.kanban-plugin__item-tags .kanban-plugin__item-tag.is-search-match {
-  background-color: var(--text-highlight-bg);
-  color: var(--text-normal);
-}
-
 .kanban-plugin__meta-table {
   width: 100%;
   margin: 0;
@@ -1516,8 +1510,10 @@ button.kanban-plugin__cancel-action-button {
   background: var(--background-secondary);
 }
 
+// Search matches: solid yellow marker with dark text, readable in light and dark mode.
 .kanban-plugin mark {
-  background-color: var(--text-highlight-bg);
+  background-color: var(--color-yellow);
+  color: #1e1e1e;
 }
 
 .kanban-plugin__draggable-setting-container {
@@ -2106,6 +2102,22 @@ body:has(.kanban-plugin__card-modal-container) {
     > .svg-icon {
       width: var(--icon-size);
       height: var(--icon-size);
+    }
+  }
+}
+
+// Search highlight (K16)
+// Iconic makes tags flex boxes with a gap. Search splits a matching tag into
+// text + <mark> + text, and the gap then shows up as extra space around the match.
+// Drop the gap on those tags and keep the icon's 2px spacing from K15.
+.kanban-plugin,
+.kanban-plugin__drag-container,
+.kanban-plugin__card-modal-container {
+  a.tag:has(> mark) {
+    gap: 0;
+
+    > .iconic-icon {
+      margin-inline-end: 2px;
     }
   }
 }

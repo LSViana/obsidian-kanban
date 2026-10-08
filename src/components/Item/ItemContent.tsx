@@ -1,4 +1,5 @@
 import { EditorView } from '@codemirror/view';
+import Mark from 'mark.js';
 import { Component, MarkdownRenderer as ObsidianRenderer } from 'obsidian';
 import { memo } from 'preact/compat';
 import {
@@ -166,6 +167,7 @@ export function Tags({
             color={tagColor?.color}
             backgroundColor={tagColor?.backgroundColor}
             isSearchMatch={!!searchQuery && tag.toLocaleLowerCase().contains(searchQuery)}
+            searchQuery={searchQuery}
             onClick={(e) => {
               e.preventDefault();
 
@@ -193,16 +195,30 @@ function TagLink({
   color,
   backgroundColor,
   isSearchMatch,
+  searchQuery,
   onClick,
 }: {
   tag: string;
   color?: string;
   backgroundColor?: string;
   isSearchMatch: boolean;
+  searchQuery?: string;
   onClick: (e: MouseEvent) => void;
 }) {
   const { stateManager, filePath } = useContext(KanbanContext);
   const elRef = useRef<HTMLSpanElement>();
+  const tagElRef = useRef<HTMLElement>();
+  const searchRef = useRef({ isSearchMatch, searchQuery });
+  searchRef.current = { isSearchMatch, searchQuery };
+
+  // Highlight the matching part of the tag name the same way card text is highlighted.
+  const applySearch = (tagEl: HTMLElement) => {
+    const { isSearchMatch, searchQuery } = searchRef.current;
+    tagEl.toggleClass('is-search-match', isSearchMatch);
+    const mark = new Mark(tagEl);
+    mark.unmark();
+    if (searchQuery && searchQuery.trim()) mark.mark(searchQuery);
+  };
 
   useEffect(() => {
     const el = elRef.current;
@@ -214,7 +230,6 @@ function TagLink({
 
     const applyKanbanState = (tagEl: HTMLElement) => {
       tagEl.addClass(c('item-tag'));
-      tagEl.toggleClass('is-search-match', isSearchMatch);
       if (color) tagEl.style.setProperty('--tag-color', color);
       if (backgroundColor) tagEl.style.setProperty('--tag-background', backgroundColor);
     };
@@ -229,6 +244,8 @@ function TagLink({
           tagEl = createEl('a', { cls: 'tag', href: tag, text: tag });
         }
         applyKanbanState(tagEl);
+        applySearch(tagEl);
+        tagElRef.current = tagEl;
         el.empty();
         el.append(tagEl);
       });
@@ -237,7 +254,11 @@ function TagLink({
       cancelled = true;
       component.unload();
     };
-  }, [tag, color, backgroundColor, isSearchMatch, filePath]);
+  }, [tag, color, backgroundColor, filePath]);
+
+  useEffect(() => {
+    if (tagElRef.current) applySearch(tagElRef.current);
+  }, [isSearchMatch, searchQuery]);
 
   return <span ref={elRef} onClick={onClick} />;
 }
