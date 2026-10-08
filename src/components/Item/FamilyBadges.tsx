@@ -8,6 +8,7 @@ import { Icon } from '../Icon/Icon';
 import { KanbanContext } from '../context';
 import { baseClassName, c } from '../helpers';
 import { Board, Item } from '../types';
+import { toggleChildList } from './ChildListPopover';
 
 interface FamilyNode {
   item: Item;
@@ -181,7 +182,7 @@ function setHighlight(el: HTMLElement, ids: Set<string> | null) {
   });
 }
 
-function scrollToCard(el: HTMLElement, id: string) {
+export function scrollToCard(el: HTMLElement, id: string) {
   const root = getBoardRoot(el);
   const card = root
     ?.querySelector(`.${badgeClass}[data-family-id="${id}"]`)
@@ -195,7 +196,7 @@ function scrollToCard(el: HTMLElement, id: string) {
 }
 
 export function FamilyBadges({ item }: { item: Item }) {
-  const { stateManager } = useContext(KanbanContext);
+  const { stateManager, boardModifiers } = useContext(KanbanContext);
   const board = useBoard(stateManager);
   const countArchivedAsDone = !!stateManager.useSetting('count-archived-children-as-done');
 
@@ -250,6 +251,15 @@ export function FamilyBadges({ item }: { item: Item }) {
           data-family-id={item.id}
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleChildList({
+              anchor: e.currentTarget as HTMLElement,
+              parentId: item.id,
+              stateManager,
+              boardModifiers,
+            });
+          }}
         >
           <Icon name="lucide-list-tree" />
           <span className={c('family-badge-text')}>

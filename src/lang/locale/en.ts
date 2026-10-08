@@ -314,6 +314,7 @@ const en = {
   'Count archived child cards as done': 'Count archived child cards as done',
   "Archived child cards always count toward their parent's total. When toggled, they also count as done.":
     "Archived child cards always count toward their parent's total. When toggled, they also count as done.",
+  Archived: 'Archived',
 
   // components/Selection
   'cards selected': 'cards selected',
