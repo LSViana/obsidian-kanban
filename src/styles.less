@@ -1824,9 +1824,17 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
 
 // Card modal (Open card). Layout classes on the container: center now, left/right reserved for side peek.
 // Layout: fixed title bar on top, scrolling body, footer bar with tags.
+// Fixed width, near the top of the screen. The height grows with the content up to
+// max-height, then the body scrolls.
+.kanban-plugin__card-modal-container.kanban-plugin__card-modal-center {
+  align-items: flex-start;
+}
+
 .kanban-plugin__card-modal-container .modal.kanban-plugin__card-modal {
   width: min(720px, 90vw);
-  max-height: 85vh;
+  max-width: none;
+  max-height: 80vh;
+  margin-top: 10vh;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -1866,7 +1874,7 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   padding: 0 0 0 var(--card-modal-padding-x);
   background-color: var(--background-secondary);
   border-bottom: var(--border-width) solid var(--background-modifier-border);
-  font-size: var(--font-ui-small);
+  font-size: var(--font-text-size);
   color: var(--text-muted);
 }
 
@@ -1966,7 +1974,7 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   padding: var(--card-modal-bar-padding-y) var(--card-modal-padding-x);
   background-color: var(--background-secondary);
   border-top: var(--border-width) solid var(--background-modifier-border);
-  font-size: var(--font-ui-smaller);
+  font-size: var(--font-text-size);
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -2001,6 +2009,7 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
 .is-mobile .kanban-plugin__card-modal-container .modal.kanban-plugin__card-modal {
   width: 100%;
   max-height: 100%;
+  margin-top: 0;
 }
 
 // Parent and child card badges (K6)
