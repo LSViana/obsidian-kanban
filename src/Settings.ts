@@ -96,6 +96,7 @@ export interface KanbanSettings {
   'truncate-lane-titles'?: boolean;
   'open-card-on-click'?: boolean;
   'show-first-line-only'?: boolean;
+  'move-card-body-to-note'?: boolean;
   'count-archived-children-as-done'?: boolean;
 }
 
@@ -121,6 +122,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'truncate-lane-titles',
   'open-card-on-click',
   'show-first-line-only',
+  'move-card-body-to-note',
   'count-archived-children-as-done',
   'inline-metadata-position',
   'lane-width',
@@ -691,6 +693,50 @@ export class SettingsManager {
             },
           });
         });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Move card body to new note'))
+      .setDesc(
+        t(
+          'When toggled, "New note from card" moves the text below the first line into the new note, if a blank line separates them. Parent links stay on the card.'
+        )
+      )
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('move-card-body-to-note', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'move-card-body-to-note': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('move-card-body-to-note', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['move-card-body-to-note'],
+                });
+              });
+          });
       });
 
     contentEl.createEl('h4', { text: t('Tags') });

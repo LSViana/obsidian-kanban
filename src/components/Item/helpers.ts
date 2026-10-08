@@ -12,6 +12,19 @@ import { Instance } from '../Editor/flatpickr/types/instance';
 import { c, escapeRegExpStr } from '../helpers';
 import { Item } from '../types';
 
+// Splits card text into its first non-empty line and everything after it. The rest only
+// counts as separate when a blank line follows the first line; otherwise nothing is split.
+export function splitFirstLine(text: string) {
+  const lines = text.split(/\r?\n/g);
+  const index = lines.findIndex((line) => line.trim() !== '');
+  if (index === -1 || index + 1 >= lines.length || lines[index + 1].trim() !== '') {
+    return { first: text, rest: '' };
+  }
+
+  const rest = lines.slice(index + 1).join('\n');
+  return { first: lines.slice(0, index + 1).join('\n'), rest: rest.trim() ? rest : '' };
+}
+
 export function constructDatePicker(
   win: Window,
   stateManager: StateManager,

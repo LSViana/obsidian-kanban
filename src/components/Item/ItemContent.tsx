@@ -32,6 +32,7 @@ import {
   constructMenuDatePickerOnChange,
   constructMenuTimePickerOnChange,
   constructTimePicker,
+  splitFirstLine,
 } from './helpers';
 
 export function useDatePickers(item: Item, explicitPath?: Path) {
@@ -86,19 +87,6 @@ export interface ItemContentProps {
   editState: EditState;
   isStatic: boolean;
   firstLineOnly?: boolean;
-}
-
-// Splits card text into its first non-empty line and everything after it. The rest only
-// counts as separate when a blank line follows the first line; otherwise nothing is split.
-function splitFirstLine(text: string) {
-  const lines = text.split(/\r?\n/g);
-  const index = lines.findIndex((line) => line.trim() !== '');
-  if (index === -1 || index + 1 >= lines.length || lines[index + 1].trim() !== '') {
-    return { first: text, rest: '' };
-  }
-
-  const rest = lines.slice(index + 1).join('\n');
-  return { first: lines.slice(0, index + 1).join('\n'), rest: rest.trim() ? rest : '' };
 }
 
 function checkCheckbox(stateManager: StateManager, title: string, checkboxIndex: number) {

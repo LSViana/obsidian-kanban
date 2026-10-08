@@ -1,10 +1,11 @@
 import update from 'immutability-helper';
-import { Keymap, Menu, Platform, TFile, TFolder, WorkspaceLeaf } from 'obsidian';
+import { Keymap, MarkdownView, Menu, Platform, TFile, TFolder, WorkspaceLeaf } from 'obsidian';
 import { Dispatch, StateUpdater, useCallback } from 'preact/hooks';
 import { StateManager } from 'src/StateManager';
 import { Path } from 'src/dnd/types';
 import { moveEntity } from 'src/dnd/util/data';
 import { t } from 'src/lang/helpers';
+import { parentFieldRegex } from 'src/parsers/formats/list';
 
 import { BoardModifiers } from '../../helpers/boardModifiers';
 import { applyTemplate, escapeRegExpStr, generateInstanceId } from '../helpers';
@@ -15,6 +16,7 @@ import {
   constructMenuDatePickerOnChange,
   constructMenuTimePickerOnChange,
   constructTimePicker,
+  splitFirstLine,
 } from './helpers';
 
 const illegalCharsRegEx = /[\\/:"*?<>|]+/g;
@@ -48,6 +50,40 @@ function getNewNoteLeaf(
     default:
       return workspace.getLeaf('split', 'vertical');
   }
+}
+
+// Appends text to the end of a freshly created note, after any template content.
+async function appendToNewNote(
+  stateManager: StateManager,
+  leaf: WorkspaceLeaf,
+  file: TFile,
+  text: string
+) {
+  const view = leaf.view;
+
+  // Write through the open editor so we don't race the editor's own save of the template
+  if (view instanceof MarkdownView && view.file === file) {
+    const { editor } = view;
+    const current = editor.getValue();
+    const separator = !current.trim()
+      ? ''
+      : current.endsWith('\n\n')
+        ? ''
+        : current.endsWith('\n')
+          ? '\n'
+          : '\n\n';
+    const lastLine = editor.lastLine();
+
+    editor.replaceRange(`${separator}${text}\n`, {
+      line: lastLine,
+      ch: editor.getLine(lastLine).length,
+    });
+    return;
+  }
+
+  await stateManager.app.vault.process(file, (data) =>
+    data.trim() ? `${data.trimEnd()}\n\n${text}\n` : `${text}\n`
+  );
 }
 
 interface UseItemMenuParams {
@@ -103,6 +139,18 @@ export function useItemMenu({
               const newNoteFolder = stateManager.getSetting('new-note-folder');
               const newNoteTemplatePath = stateManager.getSetting('new-note-template');
 
+              // Optionally move the card body (text after "first line + blank line") into the
+              // new note. Parent links stay on the card so the card keeps its family.
+              const titleParts = stateManager.getSetting('move-card-body-to-note')
+                ? splitFirstLine(item.data.titleRaw)
+                : null;
+              const bodyLines = titleParts?.rest ? titleParts.rest.split('\n') : [];
+              const keptLines = bodyLines.filter((line) => parentFieldRegex.test(line));
+              const movedBody = bodyLines
+                .filter((line) => !parentFieldRegex.test(line))
+                .join('\n')
+                .trim();
+
               const targetFolder = newNoteFolder
                 ? (stateManager.app.vault.getAbstractFileByPath(newNoteFolder as string) as TFolder)
                 : stateManager.app.fileManager.getNewFileParent(stateManager.file.path);
@@ -120,10 +168,17 @@ export function useItemMenu({
 
               await applyTemplate(stateManager, newNoteTemplatePath as string | undefined);
 
-              const newTitleRaw = item.data.titleRaw.replace(
-                prevTitle,
-                stateManager.app.fileManager.generateMarkdownLink(newFile, stateManager.file.path)
+              if (movedBody) {
+                await appendToNewNote(stateManager, newLeaf, newFile, movedBody);
+              }
+
+              const newLink = stateManager.app.fileManager.generateMarkdownLink(
+                newFile,
+                stateManager.file.path
               );
+              const newTitleRaw = movedBody
+                ? [titleParts.first.replace(prevTitle, newLink), ...keptLines].join('\n')
+                : item.data.titleRaw.replace(prevTitle, newLink);
 
               boardModifiers.updateItem(path, stateManager.updateItemContent(item, newTitleRaw));
             });
