@@ -329,6 +329,35 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
     cm.dispatch({ selection: EditorSelection.cursor(cm.state.doc.length) });
   }, [modal]);
 
+  // Other plugins (like Iconic) decorate editor tags while CodeMirror processes an update,
+  // but CodeMirror can redraw those lines right after and drop the decoration. Sending one
+  // empty update on the next frame lets them decorate the final DOM. Iconic does the same.
+  const decorationFrameRef = useRef<number | null>(null);
+  const isRefreshingDecorationsRef = useRef(false);
+  const scheduleDecorationRefresh = useCallback(() => {
+    if (isRefreshingDecorationsRef.current) {
+      isRefreshingDecorationsRef.current = false;
+      return;
+    }
+    const win = view.getWindow();
+    if (decorationFrameRef.current !== null) win.cancelAnimationFrame(decorationFrameRef.current);
+    decorationFrameRef.current = win.requestAnimationFrame(() => {
+      decorationFrameRef.current = null;
+      const cm = editorRef.current;
+      if (!cm || closedRef.current) return;
+      isRefreshingDecorationsRef.current = true;
+      cm.dispatch({});
+    });
+  }, [view]);
+
+  useEffect(() => {
+    return () => {
+      if (decorationFrameRef.current !== null) {
+        view.getWindow().cancelAnimationFrame(decorationFrameRef.current);
+      }
+    };
+  }, [view]);
+
   const onEnter = useCallback(
     (_cm: EditorView, mod: boolean) => {
       if (mod) {
@@ -391,6 +420,7 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
             onEscape={onEscape}
             onSubmit={closeModal}
             onChange={(update) => {
+              scheduleDecorationRefresh();
               if (!update.docChanged) return;
               pendingTextRef.current = update.state.doc.toString().trim();
               const win = view.getWindow();
