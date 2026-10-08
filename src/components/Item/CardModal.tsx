@@ -33,7 +33,7 @@ const AUTOSAVE_DELAY_MS = 750;
 const SINGLE_CLICK_DELAY_MS = 150;
 const IGNORE_CLICK_AFTER_DRAG_MS = 300;
 
-const INTERACTIVE_SELECTOR = [
+export const INTERACTIVE_SELECTOR = [
   'a',
   'button',
   'input',

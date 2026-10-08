@@ -2109,3 +2109,90 @@ body:has(.kanban-plugin__card-modal-container) {
     }
   }
 }
+
+// Card selection (K11)
+.kanban-plugin__item.is-selected {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+  background-color: hsla(var(--interactive-accent-hsl), 0.12);
+}
+
+.kanban-plugin.is-box-selecting {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.kanban-plugin__selection-box {
+  position: absolute;
+  z-index: var(--layer-popover);
+  pointer-events: none;
+  border: 1px solid var(--interactive-accent);
+  background-color: hsla(var(--interactive-accent-hsl), 0.15);
+  border-radius: 2px;
+}
+
+.kanban-plugin__selection-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--layer-popover);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background-color: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  font-size: var(--font-ui-small);
+  white-space: nowrap;
+}
+
+.kanban-plugin__selection-bar-count {
+  color: var(--text-muted);
+}
+
+.kanban-plugin__confirm-modal .modal-button-container {
+  margin-top: 16px;
+}
+
+.menu-item.kanban-plugin__menu-note .menu-item-icon {
+  visibility: hidden;
+}
+
+.menu-item.kanban-plugin__menu-note-footer {
+  margin-top: var(--size-4-2);
+}
+
+// Dragging several selected cards: the dragged card looks like a stack with a count badge,
+// and the other selected cards fade until the drop.
+.kanban-plugin__drag-container.kanban-plugin__drag-group {
+  .kanban-plugin__item {
+    box-shadow:
+      4px 4px 0 -1px var(--background-primary),
+      4px 4px 0 0 var(--interactive-accent),
+      8px 8px 0 -1px var(--background-primary),
+      8px 8px 0 0 var(--interactive-accent);
+  }
+}
+
+.kanban-plugin__drag-group-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  line-height: 22px;
+  text-align: center;
+}
+
+.kanban-plugin.is-dragging-group .kanban-plugin__item.is-selected {
+  opacity: 0.35;
+}

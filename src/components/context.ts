@@ -4,6 +4,7 @@ import { StateManager } from 'src/StateManager';
 import { IntersectionObserverHandler } from 'src/dnd/managers/ScrollManager';
 
 import { BoardModifiers } from '../helpers/boardModifiers';
+import { SelectionManager } from './Selection/SelectionManager';
 import { Item, Lane, LaneSort } from './types';
 
 export interface KanbanContextProps {
@@ -23,6 +24,8 @@ export interface SearchContextProps {
 }
 
 export const SearchContext = createContext<SearchContextProps | null>(null);
+// Card selection for the board view. Null in views without selection (table).
+export const SelectionContext = createContext<SelectionManager | null>(null);
 export const SortContext = createContext<LaneSort | string | null>(null);
 export const IntersectionObserverContext = createContext<{
   registerHandler: (el: HTMLElement, handler: IntersectionObserverHandler) => void;

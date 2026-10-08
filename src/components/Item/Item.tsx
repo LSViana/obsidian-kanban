@@ -1,4 +1,5 @@
 import classcat from 'classcat';
+import { Keymap } from 'obsidian';
 import {
   JSX,
   memo,
@@ -15,10 +16,12 @@ import { DndManagerContext } from 'src/dnd/components/context';
 import { useDragHandle } from 'src/dnd/managers/DragManager';
 import { frontmatterKey } from 'src/parsers/common';
 
-import { KanbanContext, SearchContext } from '../context';
+import { showBulkMenu } from '../Selection/BulkMenu';
+import { useIsSelected } from '../Selection/SelectionManager';
+import { KanbanContext, SearchContext, SelectionContext } from '../context';
 import { c } from '../helpers';
 import { EditState, EditingState, Item, isEditing } from '../types';
-import { CardModalPortal, useOpenCardOnClick } from './CardModal';
+import { CardModalPortal, INTERACTIVE_SELECTOR, useOpenCardOnClick } from './CardModal';
 import { FamilyBadges } from './FamilyBadges';
 import { ItemCheckbox } from './ItemCheckbox';
 import { ItemContent } from './ItemContent';
@@ -145,6 +148,79 @@ const ItemInner = memo(function ItemInner({
     openCard: isStatic ? undefined : openCard,
   });
 
+  const selection = useContext(SelectionContext);
+
+  // A click that ends a drag must not change the selection
+  const lastDragEndRef = useRef(0);
+  useEffect(() => {
+    if (!selection) return;
+    let isDragging = false;
+    const onDragStart = () => {
+      isDragging = true;
+    };
+    const onDragEnd = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      lastDragEndRef.current = Date.now();
+    };
+    dndManager.dragManager.emitter.on('dragStart', onDragStart);
+    dndManager.dragManager.emitter.on('dragEnd', onDragEnd);
+    return () => {
+      dndManager.dragManager.emitter.off('dragStart', onDragStart);
+      dndManager.dragManager.emitter.off('dragEnd', onDragEnd);
+    };
+  }, [dndManager, selection]);
+
+  // Starting an inline edit ends the selection
+  useEffect(() => {
+    if (isEditing(editState)) selection?.clear();
+  }, [editState, selection]);
+
+  // With several cards selected, the menu of a selected card acts on all of them.
+  // Opening the menu of a card outside the selection replaces the selection.
+  const showMenu = useCallback(
+    (e: MouseEvent) => {
+      if (selection && !isStatic) {
+        if (selection.size > 1 && selection.has(item.id)) {
+          showBulkMenu({ x: e.clientX, y: e.clientY }, { stateManager, boardModifiers, selection });
+          return;
+        }
+        if (selection.size && !selection.has(item.id)) selection.clear();
+      }
+      showItemMenu(e);
+    },
+    [selection, isStatic, item.id, stateManager, boardModifiers, showItemMenu]
+  );
+
+  // Ctrl/Cmd+click toggles the card in the selection. A plain click clears the selection.
+  // Clicks on links, checkboxes, tags, dates, and buttons keep their own behavior.
+  const onClick = useCallback(
+    (e: MouseEvent) => {
+      if (selection && !isStatic && !isEditing(editState) && e.button === 0) {
+        if (Date.now() - lastDragEndRef.current < 300) return;
+        const target = e.target as Element | null;
+        const isInteractive = !!target?.closest?.(INTERACTIVE_SELECTOR);
+        const isMod = Keymap.isModifier(e, 'Mod');
+
+        if (!isInteractive && isMod && !e.shiftKey && !e.altKey) {
+          e.preventDefault();
+          cancelPendingOpen();
+          selection.toggle(item.id);
+          return;
+        }
+
+        if (!isInteractive && !isMod && !e.shiftKey && selection.size) {
+          e.preventDefault();
+          cancelPendingOpen();
+          selection.clear();
+          return;
+        }
+      }
+      onCardClick(e);
+    },
+    [selection, isStatic, editState, item.id, cancelPendingOpen, onCardClick]
+  );
+
   const onContextMenu: JSX.MouseEventHandler<HTMLDivElement> = useCallback(
     (e) => {
       if (isEditing(editState)) return;
@@ -154,9 +230,9 @@ const ItemInner = memo(function ItemInner({
       ) {
         return;
       }
-      showItemMenu(e);
+      showMenu(e);
     },
-    [showItemMenu, editState]
+    [showMenu, editState]
   );
 
   const onDoubleClick: JSX.MouseEventHandler<HTMLDivElement> = useCallback(
@@ -182,7 +258,7 @@ const ItemInner = memo(function ItemInner({
       ref={clickOutsideRef}
       // eslint-disable-next-line react/no-unknown-property
       onDblClick={onDoubleClick}
-      onClick={onCardClick}
+      onClick={onClick}
       onContextMenu={onContextMenu}
       className={classcat([
         c('item-content-wrapper'),
@@ -206,7 +282,7 @@ const ItemInner = memo(function ItemInner({
           isStatic={isStatic}
           firstLineOnly={showFirstLineOnly}
         />
-        <ItemMenuButton editState={editState} setEditState={setEditState} showMenu={showItemMenu} />
+        <ItemMenuButton editState={editState} setEditState={setEditState} showMenu={showMenu} />
       </div>
       <FamilyBadges item={item} />
       <ItemMetadata searchQuery={isMatch ? searchQuery : undefined} item={item} />
@@ -219,10 +295,12 @@ export const DraggableItem = memo(function DraggableItem(props: DraggableItemPro
   const elementRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const search = useContext(SearchContext);
+  const selection = useContext(SelectionContext);
 
   const { itemIndex, ...innerProps } = props;
 
   const bindHandle = useDragHandle(measureRef, measureRef);
+  const isSelected = useIsSelected(props.isStatic ? null : selection, props.item.id);
 
   const isMatch = search?.query ? innerProps.item.data.titleSearch.includes(search.query) : false;
   const classModifiers: string[] = getItemClassModifiers(innerProps.item);
@@ -234,8 +312,12 @@ export const DraggableItem = memo(function DraggableItem(props: DraggableItemPro
         bindHandle(el);
       }}
       className={c('item-wrapper')}
+      data-selectable-id={props.isStatic || !selection ? undefined : props.item.id}
     >
-      <div ref={elementRef} className={classcat([c('item'), ...classModifiers])}>
+      <div
+        ref={elementRef}
+        className={classcat([c('item'), ...classModifiers, { 'is-selected': isSelected }])}
+      >
         {props.isStatic ? (
           <ItemInner
             {...innerProps}

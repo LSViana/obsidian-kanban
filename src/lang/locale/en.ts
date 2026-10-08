@@ -310,6 +310,21 @@ const en = {
   'Remove parent': 'Remove parent',
   'Choose a parent card': 'Choose a parent card',
   'Untitled card': 'Untitled card',
+
+  // components/Selection
+  'cards selected': 'cards selected',
+  hidden: 'hidden',
+  'Copy links to cards': 'Copy links to cards',
+  'Mark as done': 'Mark as done',
+  'Mark as not done': 'Mark as not done',
+  'Delete cards': 'Delete cards',
+  'Archive the selected cards?': 'Archive the selected cards?',
+  'Delete the selected cards? This cannot be undone.':
+    'Delete the selected cards? This cannot be undone.',
+  'Some actions work on one card only': 'Some actions work on one card only',
+  'Confirm action': 'Confirm action',
+  Actions: 'Actions',
+  'Clear selection': 'Clear selection',
 };
 
 export type Lang = typeof en;

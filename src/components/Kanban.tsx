@@ -1,14 +1,15 @@
 import animateScrollTo from 'animated-scroll-to';
 import classcat from 'classcat';
 import update from 'immutability-helper';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { KanbanView } from 'src/KanbanView';
 import { StateManager } from 'src/StateManager';
 import { useIsAnythingDragging } from 'src/dnd/components/DragOverlay';
 import { ScrollContainer } from 'src/dnd/components/ScrollContainer';
 import { SortPlaceholder } from 'src/dnd/components/SortPlaceholder';
 import { Sortable } from 'src/dnd/components/Sortable';
-import { createHTMLDndHandlers } from 'src/dnd/managers/DragManager';
+import { DndManagerContext } from 'src/dnd/components/context';
+import { DragEventData, createHTMLDndHandlers } from 'src/dnd/managers/DragManager';
 import { t } from 'src/lang/helpers';
 
 import { DndScope } from '../dnd/components/Scope';
@@ -17,8 +18,11 @@ import { frontmatterKey } from '../parsers/common';
 import { Icon } from './Icon/Icon';
 import { Lanes } from './Lane/Lane';
 import { LaneForm } from './Lane/LaneForm';
+import { SelectionBar } from './Selection/SelectionBar';
+import { SelectionManager, getDragGroup, registerSelection } from './Selection/SelectionManager';
+import { useBoxSelect, useClearSelectionOnEscape } from './Selection/useBoxSelect';
 import { TableView } from './Table/Table';
-import { KanbanContext, SearchContext } from './context';
+import { KanbanContext, SearchContext, SelectionContext } from './context';
 import { baseClassName, c, useSearchValue } from './helpers';
 import { DataTypes } from './types';
 
@@ -178,6 +182,42 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
 
   const html5DragHandlers = createHTMLDndHandlers(stateManager);
 
+  const selection = useMemo(() => new SelectionManager(), []);
+  const canSelect = boardView !== 'table';
+
+  useEffect(() => {
+    selection.prune(boardData);
+  }, [boardData, selection]);
+
+  useEffect(() => {
+    selection.clear();
+  }, [boardView, selection]);
+
+  useBoxSelect(view, selection, canSelect);
+  useClearSelectionOnEscape(view, selection);
+
+  useEffect(() => registerSelection(view.id, selection), [view, selection]);
+
+  // While a group is dragged, the other selected cards fade to show they move along
+  const dndManager = useContext(DndManagerContext);
+  const [isDraggingGroup, setIsDraggingGroup] = useState(false);
+  useEffect(() => {
+    if (!dndManager) return;
+    const onDragStart = ({ dragEntity }: DragEventData) => {
+      const data = dragEntity?.getData();
+      if (data?.type === DataTypes.Item && getDragGroup(view.id, data.id)) {
+        setIsDraggingGroup(true);
+      }
+    };
+    const onDragEnd = () => setIsDraggingGroup(false);
+    dndManager.dragManager.emitter.on('dragStart', onDragStart);
+    dndManager.dragManager.emitter.on('dragEnd', onDragEnd);
+    return () => {
+      dndManager.dragManager.emitter.off('dragStart', onDragStart);
+      dndManager.dragManager.emitter.off('dragEnd', onDragEnd);
+    };
+  }, [dndManager, view]);
+
   if (boardData === null || boardData === undefined)
     return (
       <div className={c('loading')}>
@@ -214,81 +254,85 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
     <DndScope id={view.id}>
       <KanbanContext.Provider value={kanbanContext}>
         <SearchContext.Provider value={searchValue}>
-          <div
-            ref={rootRef}
-            className={classcat([
-              baseClassName,
-              {
-                'something-is-dragging': isAnythingDragging,
-              },
-              ...getCSSClass(boardData.data.frontmatter),
-            ])}
-            {...html5DragHandlers}
-          >
-            {(isLaneFormVisible || boardData.children.length === 0) && (
-              <LaneForm onNewLane={onNewLane} closeLaneForm={closeLaneForm} />
-            )}
-            {isSearching && (
-              <div className={c('search-wrapper')}>
-                <input
-                  ref={searchRef}
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery((e.target as HTMLInputElement).value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
+          <SelectionContext.Provider value={canSelect ? selection : null}>
+            <div
+              ref={rootRef}
+              className={classcat([
+                baseClassName,
+                {
+                  'something-is-dragging': isAnythingDragging,
+                  'is-dragging-group': isDraggingGroup,
+                },
+                ...getCSSClass(boardData.data.frontmatter),
+              ])}
+              {...html5DragHandlers}
+            >
+              {(isLaneFormVisible || boardData.children.length === 0) && (
+                <LaneForm onNewLane={onNewLane} closeLaneForm={closeLaneForm} />
+              )}
+              {isSearching && (
+                <div className={c('search-wrapper')}>
+                  <input
+                    ref={searchRef}
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery((e.target as HTMLInputElement).value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setSearchQuery('');
+                        setDebouncedSearchQuery('');
+                        (e.target as HTMLInputElement).blur();
+                        setIsSearching(false);
+                      }
+                    }}
+                    type="text"
+                    className={c('filter-input')}
+                    placeholder={t('Search...')}
+                  />
+                  <a
+                    className={`${c('search-cancel-button')} clickable-icon`}
+                    onClick={() => {
                       setSearchQuery('');
                       setDebouncedSearchQuery('');
-                      (e.target as HTMLInputElement).blur();
                       setIsSearching(false);
-                    }
-                  }}
-                  type="text"
-                  className={c('filter-input')}
-                  placeholder={t('Search...')}
-                />
-                <a
-                  className={`${c('search-cancel-button')} clickable-icon`}
-                  onClick={() => {
-                    setSearchQuery('');
-                    setDebouncedSearchQuery('');
-                    setIsSearching(false);
-                  }}
-                  aria-label={t('Cancel')}
-                >
-                  <Icon name="lucide-x" />
-                </a>
-              </div>
-            )}
-            {boardView === 'table' ? (
-              <TableView boardData={boardData} stateManager={stateManager} />
-            ) : (
-              <ScrollContainer
-                id={view.id}
-                className={classcat([
-                  c('board'),
-                  {
-                    [c('horizontal')]: boardView !== 'list',
-                    [c('vertical')]: boardView === 'list',
-                    'is-adding-lane': isLaneFormVisible,
-                  },
-                ])}
-                triggerTypes={boardScrollTiggers}
-              >
-                <div>
-                  <Sortable axis={axis}>
-                    <Lanes lanes={boardData.children} collapseDir={axis} />
-                    <SortPlaceholder
-                      accepts={boardAccepts}
-                      className={c('lane-placeholder')}
-                      index={boardData.children.length}
-                    />
-                  </Sortable>
+                    }}
+                    aria-label={t('Cancel')}
+                  >
+                    <Icon name="lucide-x" />
+                  </a>
                 </div>
-              </ScrollContainer>
-            )}
-          </div>
+              )}
+              {boardView === 'table' ? (
+                <TableView boardData={boardData} stateManager={stateManager} />
+              ) : (
+                <ScrollContainer
+                  id={view.id}
+                  className={classcat([
+                    c('board'),
+                    {
+                      [c('horizontal')]: boardView !== 'list',
+                      [c('vertical')]: boardView === 'list',
+                      'is-adding-lane': isLaneFormVisible,
+                    },
+                  ])}
+                  triggerTypes={boardScrollTiggers}
+                >
+                  <div>
+                    <Sortable axis={axis}>
+                      <Lanes lanes={boardData.children} collapseDir={axis} />
+                      <SortPlaceholder
+                        accepts={boardAccepts}
+                        className={c('lane-placeholder')}
+                        index={boardData.children.length}
+                      />
+                    </Sortable>
+                  </div>
+                </ScrollContainer>
+              )}
+              {canSelect && <SelectionBar />}
+            </div>
+          </SelectionContext.Provider>
         </SearchContext.Provider>
       </KanbanContext.Provider>
     </DndScope>

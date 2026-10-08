@@ -14,8 +14,10 @@ import {
   updateParentEntity,
 } from 'src/dnd/util/data';
 
-import { generateInstanceId } from '../components/helpers';
+import { resolveSelection } from '../components/Selection/SelectionManager';
+import { generateInstanceId, maybeCompleteForMove } from '../components/helpers';
 import { Board, DataTypes, Item, Lane } from '../components/types';
+import { getTaskStatusDone, toggleTask } from '../parsers/helpers/inlineMetadata';
 
 export interface BoardModifiers {
   appendItems: (path: Path, items: Item[]) => void;
@@ -34,6 +36,12 @@ export interface BoardModifiers {
   updateItem: (path: Path, item: Item) => void;
   archiveItem: (path: Path) => void;
   duplicateEntity: (path: Path) => void;
+  // Bulk actions on selected cards. Each one is a single board update (one save).
+  moveItemsToLane: (ids: Set<string>, laneIndex: number) => void;
+  archiveItems: (ids: Set<string>) => void;
+  deleteItems: (ids: Set<string>) => void;
+  setItemsDone: (ids: Set<string>, done: boolean) => void;
+  setItemsBlockIds: (blockIds: Map<string, string>) => void;
 }
 
 export function getBoardModifiers(view: KanbanView, stateManager: StateManager): BoardModifiers {
@@ -274,6 +282,144 @@ export function getBoardModifiers(view: KanbanView, stateManager: StateManager):
         }
 
         return insertEntity(boardData, path, [entityWithNewID]);
+      });
+    },
+
+    // Cards already in the target list stay where they are. The others keep their board order.
+    moveItemsToLane: (ids: Set<string>, laneIndex: number) => {
+      stateManager.setState((boardData) => {
+        const toMove = resolveSelection(boardData, ids).filter((s) => s.path[0] !== laneIndex);
+        if (!toMove.length || !boardData.children[laneIndex]) return boardData;
+
+        const moved: Item[] = [];
+        const replacements: Array<Item | undefined> = [];
+
+        toMove.forEach(({ item, path }) => {
+          const { next, replacement } = maybeCompleteForMove(
+            stateManager,
+            boardData,
+            path,
+            stateManager,
+            boardData,
+            [laneIndex, 0],
+            item
+          );
+          moved.push(next);
+          replacements.push(replacement);
+        });
+
+        let board = boardData;
+        // Remove from the end so earlier paths stay valid
+        for (let i = toMove.length - 1; i >= 0; i--) {
+          board = removeEntity(board, toMove[i].path, replacements[i]) as Board;
+        }
+
+        const insertionMethod = stateManager.getSetting('new-card-insertion-method') || 'append';
+        // These helpers take a child path; the last index is ignored
+        board = (
+          insertionMethod === 'append'
+            ? appendEntities(board, [laneIndex, 0], moved)
+            : prependEntities(board, [laneIndex, 0], moved)
+        ) as Board;
+
+        if (board.children[laneIndex].data.sorted !== undefined) {
+          board = updateEntity(board, [laneIndex], { data: { $unset: ['sorted'] } }) as Board;
+        }
+
+        return board;
+      });
+    },
+
+    archiveItems: (ids: Set<string>) => {
+      stateManager.setState((boardData) => {
+        const selected = resolveSelection(boardData, ids);
+        if (!selected.length) return boardData;
+
+        try {
+          let board = boardData;
+          for (let i = selected.length - 1; i >= 0; i--) {
+            board = removeEntity(board, selected[i].path) as Board;
+          }
+
+          const withDate = stateManager.getSetting('archive-with-date');
+          return update(board, {
+            data: {
+              archive: {
+                $push: selected.map(({ item }) => (withDate ? appendArchiveDate(item) : item)),
+              },
+            },
+          });
+        } catch (e) {
+          stateManager.setError(e);
+          return boardData;
+        }
+      });
+    },
+
+    deleteItems: (ids: Set<string>) => {
+      stateManager.setState((boardData) => {
+        const selected = resolveSelection(boardData, ids);
+        let board = boardData;
+        for (let i = selected.length - 1; i >= 0; i--) {
+          board = removeEntity(board, selected[i].path) as Board;
+        }
+        return board;
+      });
+    },
+
+    // Same toggle as the card checkbox, including recurring tasks from the Tasks plugin
+    setItemsDone: (ids: Set<string>, done: boolean) => {
+      stateManager.setState((boardData) => {
+        const selected = resolveSelection(boardData, ids);
+        let board = boardData;
+
+        for (let i = selected.length - 1; i >= 0; i--) {
+          const { item, path } = selected[i];
+          if (!!item.data.checked === done) continue;
+
+          const updates = toggleTask(item, stateManager.file);
+          if (updates) {
+            const [itemStrings, checkChars, thisIndex] = updates;
+            const replacements: Item[] = itemStrings.map((str, j) => {
+              const next = stateManager.getNewItem(str, checkChars[j]);
+              if (j === thisIndex) next.id = item.id;
+              return next;
+            });
+            board = insertEntity(removeEntity(board, path), path, replacements) as Board;
+          } else {
+            board = updateEntity(board, path, {
+              data: {
+                checked: { $set: done },
+                checkChar: { $set: done ? getTaskStatusDone() : ' ' },
+              },
+            }) as Board;
+          }
+        }
+
+        return board;
+      });
+    },
+
+    // Adds block ids (card id -> block id) to cards that don't have one yet
+    setItemsBlockIds: (blockIds: Map<string, string>) => {
+      stateManager.setState((boardData) => {
+        const selected = resolveSelection(boardData, new Set(blockIds.keys())).filter(
+          ({ item }) => !item.data.blockId
+        );
+        if (!selected.length) return boardData;
+
+        let board = boardData;
+        selected.forEach(({ item, path }) => {
+          const next = stateManager.updateItemContent(
+            update(item, { data: { blockId: { $set: blockIds.get(item.id) } } }),
+            item.data.titleRaw
+          );
+          board = updateParentEntity(board, path, {
+            children: { [path[path.length - 1]]: { $set: next } },
+          }) as Board;
+        });
+
+        return board;
       });
     },
   };
