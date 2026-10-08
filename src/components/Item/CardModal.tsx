@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'preact/compat';
@@ -179,6 +180,33 @@ interface CardModalPortalProps {
   item: Item;
   onClose: () => void;
   layout?: CardModalLayout;
+}
+
+/**
+ * Unique tags in the order they first appear in the card text. Tags are compared without
+ * case, like Obsidian does, and the first spelling wins.
+ */
+function getTagsInOrder(tags: string[], text: string): string[] {
+  const lowerText = text.toLocaleLowerCase();
+  const seen = new Set<string>();
+  const unique: { tag: string; index: number }[] = [];
+
+  for (const tag of tags) {
+    const key = tag.toLocaleLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const pattern = new RegExp(
+      `(^|\\s)${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s,.;:!?)\\]])`,
+      'u'
+    );
+    const match = pattern.exec(lowerText);
+    const index = match ? match.index + match[1].length : Number.MAX_SAFE_INTEGER;
+    const firstSpelling = match ? text.substr(index, tag.length) : tag;
+    unique.push({ tag: firstSpelling, index });
+  }
+
+  return unique.sort((a, b) => a.index - b.index).map((u) => u.tag);
 }
 
 /**
@@ -371,6 +399,11 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
 
   const onEscape = useCallback(() => closeModal(), [closeModal]);
 
+  const footerTags = useMemo(
+    () => getTagsInOrder(item.data.metadata.tags ?? [], item.data.titleRaw),
+    [item.data.metadata.tags, item.data.titleRaw]
+  );
+
   const onOpenLinkedNote = useCallback(
     (e: MouseEvent) => {
       const file = item.data.metadata.file;
@@ -441,7 +474,7 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
         </div>
         <ItemMetadata item={item} />
       </div>
-      <CardModalTags tags={item.data.metadata.tags ?? []} />
+      <CardModalTags tags={footerTags} />
     </div>,
     modal.contentEl
   );
