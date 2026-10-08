@@ -12,6 +12,7 @@ import { Board, Item } from '../types';
 interface FamilyNode {
   item: Item;
   done: boolean;
+  archived: boolean;
   parentId?: string;
   parentMissing: boolean;
   inLoop: boolean;
@@ -20,10 +21,16 @@ interface FamilyNode {
 
 type FamilyIndex = Map<string, FamilyNode>;
 
-// One index per board state. Lanes are immutable, so a new array means the board changed.
-const indexCache = new WeakMap<Board['children'], FamilyIndex>();
+interface CachedIndex {
+  archive: Item[];
+  countArchivedAsDone: boolean;
+  index: FamilyIndex;
+}
 
-function buildFamilyIndex(board: Board): FamilyIndex {
+// One index per board state. Lanes are immutable, so a new array means the board changed.
+const indexCache = new WeakMap<Board['children'], CachedIndex>();
+
+function buildFamilyIndex(board: Board, countArchivedAsDone: boolean): FamilyIndex {
   const index: FamilyIndex = new Map();
   const byBlockId = new Map<string, Item>();
 
@@ -32,6 +39,7 @@ function buildFamilyIndex(board: Board): FamilyIndex {
       index.set(item.id, {
         item,
         done: !!item.data.checked || !!lane.data.shouldMarkItemsComplete,
+        archived: false,
         parentMissing: false,
         inLoop: false,
         childIds: [],
@@ -39,6 +47,18 @@ function buildFamilyIndex(board: Board): FamilyIndex {
 
       const blockId = item.data.blockId;
       if (blockId && !byBlockId.has(blockId)) byBlockId.set(blockId, item);
+    });
+  });
+
+  // Archived cards only count toward their parent's total. They can't be parents.
+  (board.data.archive ?? []).forEach((item) => {
+    index.set(item.id, {
+      item,
+      done: countArchivedAsDone,
+      archived: true,
+      parentMissing: false,
+      inLoop: false,
+      childIds: [],
     });
   });
 
@@ -72,12 +92,15 @@ function buildFamilyIndex(board: Board): FamilyIndex {
   return index;
 }
 
-export function getFamilyIndex(board: Board) {
-  let index = indexCache.get(board.children);
-  if (!index) {
-    index = buildFamilyIndex(board);
-    indexCache.set(board.children, index);
+export function getFamilyIndex(board: Board, countArchivedAsDone = false) {
+  const archive = board.data.archive;
+  const cached = indexCache.get(board.children);
+  if (cached && cached.archive === archive && cached.countArchivedAsDone === countArchivedAsDone) {
+    return cached.index;
   }
+
+  const index = buildFamilyIndex(board, countArchivedAsDone);
+  indexCache.set(board.children, { archive, countArchivedAsDone, index });
   return index;
 }
 
@@ -114,6 +137,14 @@ export function getFamilyIds(index: FamilyIndex, id: string) {
     stack.push(...(index.get(childId)?.childIds ?? []));
   }
 
+  return ids;
+}
+
+// The family above, plus the item's siblings (other children of the same parent)
+function getHighlightIds(index: FamilyIndex, id: string) {
+  const ids = getFamilyIds(index, id);
+  const parentId = index.get(id)?.parentId;
+  if (parentId) index.get(parentId)?.childIds.forEach((siblingId) => ids.add(siblingId));
   return ids;
 }
 
@@ -166,10 +197,11 @@ function scrollToCard(el: HTMLElement, id: string) {
 export function FamilyBadges({ item }: { item: Item }) {
   const { stateManager } = useContext(KanbanContext);
   const board = useBoard(stateManager);
+  const countArchivedAsDone = !!stateManager.useSetting('count-archived-children-as-done');
 
   if (!board) return null;
 
-  const index = getFamilyIndex(board);
+  const index = getFamilyIndex(board, countArchivedAsDone);
   const node = index.get(item.id);
   if (!node) return null;
 
@@ -178,7 +210,7 @@ export function FamilyBadges({ item }: { item: Item }) {
   if (!hasParent && !childCount) return null;
 
   const onEnter = (e: MouseEvent) =>
-    setHighlight(e.currentTarget as HTMLElement, getFamilyIds(index, item.id));
+    setHighlight(e.currentTarget as HTMLElement, getHighlightIds(index, item.id));
   const onLeave = (e: MouseEvent) => setHighlight(e.currentTarget as HTMLElement, null);
 
   const parent = node.parentId ? index.get(node.parentId) : null;

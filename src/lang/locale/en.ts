@@ -311,6 +311,9 @@ const en = {
   'Remove parent': 'Remove parent',
   'Choose a parent card': 'Choose a parent card',
   'Untitled card': 'Untitled card',
+  'Count archived child cards as done': 'Count archived child cards as done',
+  "Archived child cards always count toward their parent's total. When toggled, they also count as done.":
+    "Archived child cards always count toward their parent's total. When toggled, they also count as done.",
 
   // components/Selection
   'cards selected': 'cards selected',

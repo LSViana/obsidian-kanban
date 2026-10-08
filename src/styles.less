@@ -2061,6 +2061,11 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
 
 .kanban-plugin__family-badge-children.is-complete {
   color: var(--text-success);
+
+  &.is-family-highlight {
+    background-color: var(--color-green);
+    color: color-mix(in srgb, var(--color-green) 25%, black);
+  }
 }
 
 .kanban-plugin__family-badge-text {

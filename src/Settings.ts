@@ -96,6 +96,7 @@ export interface KanbanSettings {
   'truncate-lane-titles'?: boolean;
   'open-card-on-click'?: boolean;
   'show-first-line-only'?: boolean;
+  'count-archived-children-as-done'?: boolean;
 }
 
 export interface KanbanViewSettings {
@@ -120,6 +121,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'truncate-lane-titles',
   'open-card-on-click',
   'show-first-line-only',
+  'count-archived-children-as-done',
   'inline-metadata-position',
   'lane-width',
   'link-date-to-daily-note',
@@ -478,6 +480,50 @@ export class SettingsManager {
 
                 this.applySettingsUpdate({
                   $unset: ['show-first-line-only'],
+                });
+              });
+          });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Count archived child cards as done'))
+      .setDesc(
+        t(
+          "Archived child cards always count toward their parent's total. When toggled, they also count as done."
+        )
+      )
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('count-archived-children-as-done', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'count-archived-children-as-done': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('count-archived-children-as-done', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['count-archived-children-as-done'],
                 });
               });
           });
