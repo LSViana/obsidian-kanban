@@ -1,7 +1,15 @@
 import { EditorSelection } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { App, Keymap, Modal, Notice } from 'obsidian';
-import { createPortal, useCallback, useContext, useEffect, useRef, useState } from 'preact/compat';
+import {
+  createPortal,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'preact/compat';
 import { DndManagerContext } from 'src/dnd/components/context';
 import { t } from 'src/lang/helpers';
 
@@ -166,6 +174,71 @@ interface CardModalPortalProps {
 }
 
 /**
+ * Footer tag row. Tags stay on one line; the ones that don't fit are hidden and counted.
+ */
+function CardModalTags({ tags }: { tags: string[] }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [hiddenCount, setHiddenCount] = useState(0);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    const measure = () => {
+      const tagList = list.querySelector<HTMLElement>(`.${c('item-tags')}`);
+      if (!tagList) {
+        setHiddenCount(0);
+        return;
+      }
+
+      const tagEls = Array.from(tagList.children) as HTMLElement[];
+      tagEls.forEach((el) => el.style.removeProperty('display'));
+
+      let hidden = 0;
+      while (hidden < tagEls.length && tagList.scrollWidth > tagList.clientWidth) {
+        hidden++;
+        tagEls[tagEls.length - hidden].style.display = 'none';
+      }
+
+      setHiddenCount(hidden);
+    };
+
+    measure();
+
+    // Re-measure when the footer resizes or when tags finish rendering (they render async).
+    const resizeObserver = new ResizeObserver(() => measure());
+    resizeObserver.observe(list);
+    const mutationObserver = new MutationObserver(() => measure());
+    mutationObserver.observe(list, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [tags]);
+
+  return (
+    <div className={c('card-modal-footer')}>
+      <span className={c('card-modal-footer-label')}>{t('Tags')}:</span>
+      {tags.length ? (
+        <>
+          <div ref={listRef} className={c('card-modal-footer-tags')}>
+            <Tags tags={tags} alwaysShow />
+          </div>
+          {hiddenCount > 0 && (
+            <span className={c('card-modal-hidden-tags')}>
+              +{hiddenCount} {hiddenCount === 1 ? t('hidden tag') : t('hidden tags')}
+            </span>
+          )}
+        </>
+      ) : (
+        <span className={c('card-modal-hidden-tags')}>{t('No tags')}</span>
+      )}
+    </div>
+  );
+}
+
+/**
  * Opens a card in an Obsidian modal. The content is rendered through a portal so it keeps
  * the board's Preact context and receives live item updates.
  */
@@ -205,7 +278,9 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
 
     const current = currentBoard.children[path[0]].children[path[1]];
     if (current.data.titleRaw !== lastSavedRef.current) {
-      new Notice(t('This card was changed somewhere else while it was open. Your version was saved.'));
+      new Notice(
+        t('This card was changed somewhere else while it was open. Your version was saved.')
+      );
     }
 
     const updated = stateManager.updateItemContent(current, text);
@@ -276,8 +351,10 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
 
   return createPortal(
     <div className={c('card-modal-content')}>
-      <div className={c('card-modal-header')}>
-        <span className={c('card-modal-lane')}>{laneTitle}</span>
+      <div className={c('card-modal-titlebar')}>
+        <span className={c('card-modal-lane')}>
+          {t('List')}: <strong>{laneTitle}</strong>
+        </span>
         {item.data.metadata.file && (
           <button
             className={`clickable-icon ${c('card-modal-action')}`}
@@ -287,37 +364,46 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
             <Icon name="lucide-file-text" />
           </button>
         )}
+        <button
+          className={`${c('card-modal-action')} ${c('card-modal-close')}`}
+          aria-label={t('Close')}
+          onClick={closeModal}
+        >
+          <Icon name="lucide-x" />
+        </button>
       </div>
-      <div className={`${c('item-input-wrapper')} ${c('card-modal-editor')}`}>
-        <MarkdownEditor
-          editorRef={editorRef}
-          editState={EditingState.cancel}
-          className={c('item-input')}
-          value={item.data.titleRaw}
-          onEnter={onEnter}
-          onEscape={onEscape}
-          onSubmit={closeModal}
-          onChange={(update) => {
-            if (!update.docChanged) return;
-            pendingTextRef.current = update.state.doc.toString().trim();
-            const win = view.getWindow();
-            if (timerRef.current !== null) win.clearTimeout(timerRef.current);
-            timerRef.current = win.setTimeout(() => saveRef.current(), AUTOSAVE_DELAY_MS);
-          }}
-        />
+      <div className={c('card-modal-body')}>
+        <div className={`${c('item-input-wrapper')} ${c('card-modal-editor')}`}>
+          <MarkdownEditor
+            editorRef={editorRef}
+            editState={EditingState.cancel}
+            className={c('item-input')}
+            value={item.data.titleRaw}
+            onEnter={onEnter}
+            onEscape={onEscape}
+            onSubmit={closeModal}
+            onChange={(update) => {
+              if (!update.docChanged) return;
+              pendingTextRef.current = update.state.doc.toString().trim();
+              const win = view.getWindow();
+              if (timerRef.current !== null) win.clearTimeout(timerRef.current);
+              timerRef.current = win.setTimeout(() => saveRef.current(), AUTOSAVE_DELAY_MS);
+            }}
+          />
+        </div>
+        <div className={`${c('item-metadata')} ${c('card-modal-metadata')}`}>
+          <RelativeDate item={item} stateManager={stateManager} />
+          <DateAndTime
+            item={item}
+            stateManager={stateManager}
+            filePath={filePath}
+            getDateColor={getDateColor}
+          />
+          <InlineMetadata item={item} stateManager={stateManager} />
+        </div>
+        <ItemMetadata item={item} />
       </div>
-      <div className={`${c('item-metadata')} ${c('card-modal-metadata')}`}>
-        <RelativeDate item={item} stateManager={stateManager} />
-        <DateAndTime
-          item={item}
-          stateManager={stateManager}
-          filePath={filePath}
-          getDateColor={getDateColor}
-        />
-        <InlineMetadata item={item} stateManager={stateManager} />
-        <Tags tags={item.data.metadata.tags} alwaysShow />
-      </div>
-      <ItemMetadata item={item} />
+      <CardModalTags tags={item.data.metadata.tags ?? []} />
     </div>,
     modal.contentEl
   );

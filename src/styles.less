@@ -1823,31 +1823,105 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
 }
 
 // Card modal (Open card). Layout classes on the container: center now, left/right reserved for side peek.
+// Layout: fixed title bar on top, scrolling body, footer bar with tags.
 .kanban-plugin__card-modal-container .modal.kanban-plugin__card-modal {
   width: min(720px, 90vw);
   max-height: 85vh;
-  padding: var(--size-4-6) var(--size-4-8);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// Our title bar has its own close button.
+.kanban-plugin__card-modal > .modal-header,
+.kanban-plugin__card-modal > .modal-header-button,
+.kanban-plugin__card-modal > .modal-close-button {
+  display: none;
 }
 
 .kanban-plugin__card-modal .modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--size-4-3);
-  overflow-y: auto;
 }
 
-.kanban-plugin__card-modal-header {
+.kanban-plugin__card-modal-content {
+  // Shared by the title bar, body and footer so their text lines up with the card text.
+  --card-modal-padding-x: var(--size-4-6);
+  --card-modal-bar-padding-y: var(--size-4-4);
+
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  gap: var(--size-4-2);
-  min-height: var(--icon-l);
-  padding-inline-end: var(--size-4-8);
-  color: var(--text-muted);
+  flex-direction: column;
+}
+
+.kanban-plugin__card-modal-titlebar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  padding: 0 0 0 var(--card-modal-padding-x);
+  background-color: var(--background-secondary);
+  border-bottom: var(--border-width) solid var(--background-modifier-border);
   font-size: var(--font-ui-small);
+  color: var(--text-muted);
 }
 
 .kanban-plugin__card-modal-lane {
-  flex-grow: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-block: var(--card-modal-bar-padding-y);
+  padding-inline-end: var(--size-4-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  strong {
+    color: var(--text-normal);
+    font-weight: var(--font-semibold);
+  }
+}
+
+// Full-height borderless buttons that fill their area, like the buttons in a Windows title bar.
+.kanban-plugin__card-modal-titlebar button.kanban-plugin__card-modal-action {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--icon-color);
+  cursor: var(--cursor);
+
+  &:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--icon-color-hover);
+  }
+}
+
+.kanban-plugin__card-modal-titlebar button.kanban-plugin__card-modal-close:hover {
+  background-color: var(--color-red);
+  color: var(--text-on-accent);
+}
+
+.kanban-plugin__card-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  padding: var(--size-4-4) var(--card-modal-padding-x);
 }
 
 .kanban-plugin__card-modal-editor {
@@ -1863,6 +1937,11 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
       min-height: 8em;
       padding-top: 0 !important;
       padding-bottom: 0 !important;
+      padding-inline: 0;
+    }
+
+    .cm-line {
+      padding-inline: 0;
     }
   }
 }
@@ -1876,6 +1955,47 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   flex-wrap: wrap;
   align-items: center;
   gap: var(--size-4-2);
+}
+
+// Footer bar, like a file explorer status bar. Tags stay on one line.
+.kanban-plugin__card-modal-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--card-modal-bar-padding-y) var(--card-modal-padding-x);
+  background-color: var(--background-secondary);
+  border-top: var(--border-width) solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.kanban-plugin__card-modal-footer-label {
+  flex: 0 0 auto;
+}
+
+.kanban-plugin__card-modal-footer-tags {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+
+  .kanban-plugin__item-tags {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .kanban-plugin__item-tags .kanban-plugin__item-tag {
+    flex: 0 0 auto;
+    margin-block: 0;
+  }
+}
+
+.kanban-plugin__card-modal-hidden-tags {
+  flex: 0 0 auto;
+  color: var(--text-faint);
 }
 
 .is-mobile .kanban-plugin__card-modal-container .modal.kanban-plugin__card-modal {

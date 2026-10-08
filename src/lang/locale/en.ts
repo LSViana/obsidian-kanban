@@ -241,6 +241,9 @@ const en = {
     'This card no longer exists. Your text was copied to the clipboard.',
   'This card was changed somewhere else while it was open. Your version was saved.':
     'This card was changed somewhere else while it was open. Your version was saved.',
+  'No tags': 'No tags',
+  'hidden tag': 'hidden tag',
+  'hidden tags': 'hidden tags',
   'New note from card': 'New note from card',
   'Archive card': 'Archive card',
   'Delete card': 'Delete card',
