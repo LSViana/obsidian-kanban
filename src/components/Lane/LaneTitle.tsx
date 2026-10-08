@@ -54,6 +54,7 @@ export function LaneLimitCounter({
 
 export function LaneTitle({ maxItems, editState, setEditState, title, onChange }: LaneTitleProps) {
   const { stateManager } = useContext(KanbanContext);
+  const truncateTitle = stateManager.useSetting('truncate-lane-titles');
   const titleRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export function LaneTitle({ maxItems, editState, setEditState, title, onChange }
   const onEscape = useCallback(() => setEditState(EditingState.cancel), [setEditState]);
 
   return (
-    <div className={c('lane-title')}>
+    <div className={classcat([c('lane-title'), { 'is-truncated': truncateTitle }])}>
       {isEditing(editState) ? (
         <MarkdownEditor
           editState={editState}

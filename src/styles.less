@@ -476,22 +476,28 @@ button.kanban-plugin__lane-action-add {
   font-size: 0.875rem;
   flex-grow: 1;
   width: 100%;
-  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
 .kanban-plugin__lane-title-text {
   flex-grow: 1;
-  min-width: 0;
 }
 
 // Keep long lane names on one line and cut them off with an ellipsis
-.kanban-plugin__lane-title-text,
-.kanban-plugin__lane-title-text :is(div, p, h1, h2, h3, h4, h5, h6) {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.kanban-plugin__lane-title.is-truncated {
+  min-width: 0;
+
+  .kanban-plugin__lane-title-text {
+    min-width: 0;
+  }
+
+  .kanban-plugin__lane-title-text,
+  .kanban-plugin__lane-title-text :is(div, p, h1, h2, h3, h4, h5, h6) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 div.kanban-plugin__lane-title-count {

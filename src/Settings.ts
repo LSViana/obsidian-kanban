@@ -90,6 +90,7 @@ export interface KanbanSettings {
   'tag-sort'?: TagSort[];
   'time-format'?: string;
   'time-trigger'?: string;
+  'truncate-lane-titles'?: boolean;
 }
 
 export interface KanbanViewSettings {
@@ -111,6 +112,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'date-trigger',
   'full-list-lane-width',
   'hide-card-count',
+  'truncate-lane-titles',
   'inline-metadata-position',
   'lane-width',
   'link-date-to-daily-note',
@@ -327,6 +329,46 @@ export class SettingsManager {
 
                 this.applySettingsUpdate({
                   $unset: ['hide-card-count'],
+                });
+              });
+          });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Truncate long list titles'))
+      .setDesc(t('When toggled, long list titles stay on one line and end with an ellipsis'))
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('truncate-lane-titles', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'truncate-lane-titles': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('truncate-lane-titles', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['truncate-lane-titles'],
                 });
               });
           });

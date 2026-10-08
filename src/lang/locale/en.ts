@@ -117,6 +117,9 @@ const en = {
   'Hide card counts in list titles': 'Hide card counts in list titles',
   'When toggled, card counts are hidden from the list title':
     'When toggled, card counts are hidden from the list title',
+  'Truncate long list titles': 'Truncate long list titles',
+  'When toggled, long list titles stay on one line and end with an ellipsis':
+    'When toggled, long list titles stay on one line and end with an ellipsis',
   'Link dates to daily notes': 'Link dates to daily notes',
   'When toggled, dates will link to daily notes. Eg. [[2021-04-26]]':
     'When toggled, dates will link to daily notes. Eg. [[2021-04-26]]',
