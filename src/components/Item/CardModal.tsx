@@ -1,6 +1,6 @@
 import { EditorSelection } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { App, Keymap, Modal, Notice } from 'obsidian';
+import { App, Keymap, Modal, Notice, Scope } from 'obsidian';
 import {
   createPortal,
   useCallback,
@@ -146,6 +146,14 @@ class CardModal extends Modal {
 
   constructor(app: App, layout: CardModalLayout, handleClose: () => void) {
     super(app);
+    // Obsidian's default modal scope has no parent, so app hotkeys (bold, link, ...) never
+    // reach the editor. Use a scope that falls back to the app scope instead.
+    this.scope = new Scope(app.scope);
+    (this.scope as any).setTabFocusContainerEl?.(this.containerEl);
+    this.scope.register([], 'Escape', () => {
+      this.close();
+      return false;
+    });
     this.handleClose = handleClose;
     this.containerEl.addClass(c('card-modal-container'), c(`card-modal-${layout}`));
     this.modalEl.addClass(c('card-modal'));
