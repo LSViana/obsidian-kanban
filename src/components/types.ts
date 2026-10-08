@@ -75,6 +75,7 @@ export interface ItemMetadata {
   fileMetadata?: FileMetadata;
   fileMetadataOrder?: string[];
   inlineMetadata?: InlineField[];
+  parentBlockId?: string;
 }
 
 export interface ItemData {

@@ -9,6 +9,7 @@ import { t } from 'src/lang/helpers';
 import { BoardModifiers } from '../../helpers/boardModifiers';
 import { applyTemplate, escapeRegExpStr, generateInstanceId } from '../helpers';
 import { EditState, Item } from '../types';
+import { addFamilyMenuItems } from './ParentPickerModal';
 import {
   constructDatePicker,
   constructMenuDatePickerOnChange,
@@ -149,6 +150,9 @@ export function useItemMenu({
             });
         })
         .addSeparator();
+
+      addFamilyMenuItems(menu, { item, path, stateManager, boardModifiers });
+      menu.addSeparator();
 
       if (/\n/.test(item.data.titleRaw)) {
         menu.addItem((i) => {

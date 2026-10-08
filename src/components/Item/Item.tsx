@@ -18,6 +18,7 @@ import { frontmatterKey } from 'src/parsers/common';
 import { KanbanContext, SearchContext } from '../context';
 import { c } from '../helpers';
 import { EditState, EditingState, Item, isEditing } from '../types';
+import { FamilyBadges } from './FamilyBadges';
 import { ItemCheckbox } from './ItemCheckbox';
 import { ItemContent } from './ItemContent';
 import { useItemMenu } from './ItemMenu';
@@ -152,6 +153,7 @@ const ItemInner = memo(function ItemInner({
         />
         <ItemMenuButton editState={editState} setEditState={setEditState} showMenu={showItemMenu} />
       </div>
+      <FamilyBadges item={item} />
       <ItemMetadata searchQuery={isMatch ? searchQuery : undefined} item={item} />
     </div>
   );

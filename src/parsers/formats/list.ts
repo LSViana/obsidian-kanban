@@ -48,6 +48,10 @@ interface TaskItem extends ListItem {
   checkChar?: string;
 }
 
+// Matches `parent:: [[#^id]]` or `[parent:: [[#^id]]]`, with an optional link alias
+export const parentFieldRegex =
+  /(^|\s)\[?parent::\s*\[\[#\^([A-Za-z0-9-]+)(?:\|[^\]]*)?\]\]\]?/i;
+
 export function listItemToItemData(stateManager: StateManager, md: string, item: TaskItem) {
   const moveTags = stateManager.getSetting('move-tags');
   const moveDates = stateManager.getSetting('move-dates');
@@ -171,6 +175,8 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
       }
 
       if (genericNode.type === 'wikilink') {
+        // Links within this board, like [[#^abc123]], don't point to a note
+        if (!(genericNode as FileNode).fileAccessor?.target) return true;
         itemData.metadata.fileAccessor = (genericNode as FileNode).fileAccessor;
         itemData.metadata.fileMetadata = (genericNode as FileNode).fileMetadata;
         itemData.metadata.fileMetadataOrder = (genericNode as FileNode).fileMetadataOrder;
@@ -192,6 +198,14 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
   );
 
   itemData.title = preprocessTitle(stateManager, dedentNewLines(executeDeletion(title)));
+
+  const parentMatch = itemData.title.match(parentFieldRegex);
+  if (parentMatch) {
+    itemData.metadata.parentBlockId = parentMatch[2];
+    itemData.title = itemData.title.replace(parentFieldRegex, (_, lead) =>
+      lead === '\n' ? lead : ''
+    );
+  }
 
   const firstLineEnd = itemData.title.indexOf('\n');
   const inlineFields = extractInlineFields(itemData.title, true);

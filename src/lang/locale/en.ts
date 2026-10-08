@@ -285,6 +285,16 @@ const en = {
 
   // components/Editor/MarkdownEditor.tsx
   Submit: 'Submit',
+
+  // components/Item/FamilyBadges.tsx
+  done: 'done',
+  'Parent card not found': 'Parent card not found',
+  'Parent cards form a loop': 'Parent cards form a loop',
+  'Add child card': 'Add child card',
+  'Set parent…': 'Set parent…',
+  'Remove parent': 'Remove parent',
+  'Choose a parent card': 'Choose a parent card',
+  'Untitled card': 'Untitled card',
 };
 
 export type Lang = typeof en;

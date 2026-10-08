@@ -1811,3 +1811,62 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
     background-color: var(--date-background-color, rgba(var(--mono-rgb-100), 0.05));
   }
 }
+
+// Parent and child card badges (K6)
+.kanban-plugin__family-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.kanban-plugin__family-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  padding-inline: 4px;
+  border-radius: var(--radius-s);
+  background-color: var(--background-secondary);
+  color: var(--text-muted);
+  line-height: var(--line-height-tight);
+
+  .kanban-plugin__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    --icon-size: 12px;
+  }
+
+  &.is-family-highlight {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+  }
+
+  &.is-missing,
+  &.is-loop {
+    color: var(--text-error);
+  }
+}
+
+.kanban-plugin__family-badge-parent:not(.is-missing) {
+  cursor: var(--cursor);
+}
+
+.kanban-plugin__family-badge-children.is-complete {
+  color: var(--text-success);
+}
+
+.kanban-plugin__family-badge-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.kanban-plugin__item.is-family-flash {
+  box-shadow: 0 0 0 2px var(--interactive-accent);
+  transition: box-shadow 150ms ease-in-out;
+}
