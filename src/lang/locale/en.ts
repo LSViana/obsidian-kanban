@@ -233,6 +233,9 @@ const en = {
   'Open card on single click': 'Open card on single click',
   'When toggled, clicking a card opens it in a pop-up. Double-click still edits the card in place.':
     'When toggled, clicking a card opens it in a pop-up. Double-click still edits the card in place.',
+  'Show only the first line of cards': 'Show only the first line of cards',
+  'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.':
+    'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.',
   'Open linked note': 'Open linked note',
   'This card no longer exists. Your text was copied to the clipboard.':
     'This card no longer exists. Your text was copied to the clipboard.',

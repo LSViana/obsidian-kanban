@@ -748,6 +748,16 @@ button.kanban-plugin__new-item-button {
   margin-block-start: 1px;
 }
 
+.kanban-plugin__item-markdown.has-hidden-lines .kanban-plugin__markdown-preview-view {
+  > :is(p, h1, h2, h3, h4, h5, h6, blockquote):last-child::after,
+  > :is(ul, ol):last-child > li:last-child::after,
+  > div:last-child > :is(p, h1, h2, h3, h4, h5, h6, blockquote):last-child::after,
+  > div:last-child > :is(ul, ol):last-child > li:last-child::after {
+    content: ' \2026';
+    color: var(--text-faint);
+  }
+}
+
 .kanban-plugin__meta-value,
 .kanban-plugin__markdown-preview-wrapper {
   white-space: pre-wrap;

@@ -83,6 +83,20 @@ export interface ItemContentProps {
   showMetadata?: boolean;
   editState: EditState;
   isStatic: boolean;
+  firstLineOnly?: boolean;
+}
+
+// Splits card text into its first non-empty line and everything after it. The rest only
+// counts as separate when a blank line follows the first line; otherwise nothing is split.
+function splitFirstLine(text: string) {
+  const lines = text.split(/\r?\n/g);
+  const index = lines.findIndex((line) => line.trim() !== '');
+  if (index === -1 || index + 1 >= lines.length || lines[index + 1].trim() !== '') {
+    return { first: text, rest: '' };
+  }
+
+  const rest = lines.slice(index + 1).join('\n');
+  return { first: lines.slice(0, index + 1).join('\n'), rest: rest.trim() ? rest : '' };
 }
 
 function checkCheckbox(stateManager: StateManager, title: string, checkboxIndex: number) {
@@ -235,21 +249,35 @@ export const ItemContent = memo(function ItemContent({
   searchQuery,
   showMetadata = true,
   isStatic,
+  firstLineOnly = false,
 }: ItemContentProps) {
   const { stateManager, filePath, boardModifiers } = useContext(KanbanContext);
   const getDateColor = useGetDateColorFn(stateManager);
   const titleRef = useRef<string | null>(null);
 
+  const displayParts = useMemo(() => splitFirstLine(item.data.title), [item.data.title]);
+  const rawParts = useMemo(() => splitFirstLine(item.data.titleRaw), [item.data.titleRaw]);
+  const editFirstLineOnly = firstLineOnly && !!rawParts.rest;
+  const hiddenLinesMatchSearch =
+    !!searchQuery && displayParts.rest.toLocaleLowerCase().includes(searchQuery);
+  const hideRest = firstLineOnly && !!displayParts.rest && !hiddenLinesMatchSearch;
+  const displayMarkdown = hideRest ? displayParts.first : item.data.title;
+  const markdownClassName = hideRest ? `${c('item-markdown')} has-hidden-lines` : c('item-markdown');
+
   useEffect(() => {
     if (editState === EditingState.complete) {
       if (titleRef.current !== null) {
-        boardModifiers.updateItem(path, stateManager.updateItemContent(item, titleRef.current));
+        let nextTitle = titleRef.current;
+        if (editFirstLineOnly) {
+          nextTitle = nextTitle ? `${nextTitle}\n${rawParts.rest}` : rawParts.rest;
+        }
+        boardModifiers.updateItem(path, stateManager.updateItemContent(item, nextTitle));
       }
       titleRef.current = null;
     } else if (editState === EditingState.cancel) {
       titleRef.current = null;
     }
-  }, [editState, stateManager, item]);
+  }, [editState, stateManager, item, editFirstLineOnly, rawParts]);
 
   const path = useNestedEntityPath();
   const { onEditDate, onEditTime } = useDatePickers(item);
@@ -311,7 +339,7 @@ export const ItemContent = memo(function ItemContent({
           onEnter={onEnter}
           onEscape={onEscape}
           onSubmit={onSubmit}
-          value={item.data.titleRaw}
+          value={editFirstLineOnly ? rawParts.first : item.data.titleRaw}
           onChange={(update) => {
             if (update.docChanged) {
               titleRef.current = update.state.doc.toString().trim();
@@ -327,16 +355,16 @@ export const ItemContent = memo(function ItemContent({
       {isStatic ? (
         <MarkdownClonedPreviewRenderer
           entityId={item.id}
-          className={c('item-markdown')}
-          markdownString={item.data.title}
+          className={markdownClassName}
+          markdownString={displayMarkdown}
           searchQuery={searchQuery}
           onPointerUp={onCheckboxContainerClick}
         />
       ) : (
         <MarkdownRenderer
           entityId={item.id}
-          className={c('item-markdown')}
-          markdownString={item.data.title}
+          className={markdownClassName}
+          markdownString={displayMarkdown}
           searchQuery={searchQuery}
           onPointerUp={onCheckboxContainerClick}
         />

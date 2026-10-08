@@ -95,6 +95,7 @@ export interface KanbanSettings {
   'time-trigger'?: string;
   'truncate-lane-titles'?: boolean;
   'open-card-on-click'?: boolean;
+  'show-first-line-only'?: boolean;
 }
 
 export interface KanbanViewSettings {
@@ -118,6 +119,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'hide-card-count',
   'truncate-lane-titles',
   'open-card-on-click',
+  'show-first-line-only',
   'inline-metadata-position',
   'lane-width',
   'link-date-to-daily-note',
@@ -432,6 +434,50 @@ export class SettingsManager {
 
                 this.applySettingsUpdate({
                   $unset: ['open-card-on-click'],
+                });
+              });
+          });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Show only the first line of cards'))
+      .setDesc(
+        t(
+          'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.'
+        )
+      )
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('show-first-line-only', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'show-first-line-only': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('show-first-line-only', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['show-first-line-only'],
                 });
               });
           });

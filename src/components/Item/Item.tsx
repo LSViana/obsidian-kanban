@@ -100,6 +100,7 @@ const ItemInner = memo(function ItemInner({
   const closeCard = useCallback(() => setIsCardOpen(false), []);
 
   const openCardOnClick = !!stateManager.useSetting('open-card-on-click') && !isStatic;
+  const showFirstLineOnly = !!stateManager.useSetting('show-first-line-only');
   const { onClick: onCardClick, cancelPendingOpen } = useOpenCardOnClick(
     openCardOnClick,
     editState,
@@ -174,6 +175,7 @@ const ItemInner = memo(function ItemInner({
           setEditState={setEditState}
           editState={editState}
           isStatic={isStatic}
+          firstLineOnly={showFirstLineOnly}
         />
         <ItemMenuButton editState={editState} setEditState={setEditState} showMenu={showItemMenu} />
       </div>
