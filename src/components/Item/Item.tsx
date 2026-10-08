@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'preact/compat';
+import useOnclickOutside from 'react-cool-onclickoutside';
 import { Droppable, useNestedEntityPath } from 'src/dnd/components/Droppable';
 import { DndManagerContext } from 'src/dnd/components/context';
 import { useDragHandle } from 'src/dnd/managers/DragManager';
@@ -62,6 +63,24 @@ const ItemInner = memo(function ItemInner({
     };
   }, [dndManager, editState]);
 
+  // Clicking outside a card being edited saves the edit, same as pressing Enter.
+  // Popups that belong to the editor (suggestions, date pickers, menus, modals) are ignored.
+  const clickOutsideRef = useOnclickOutside(
+    () => {
+      if (isEditing(editState)) setEditState(EditingState.complete);
+    },
+    {
+      disabled: !isEditing(editState),
+      ignoreClass: [
+        c('ignore-click-outside'),
+        'mobile-toolbar',
+        'suggestion-container',
+        'menu',
+        'modal-container',
+      ],
+    }
+  );
+
   useEffect(() => {
     if (item.data.forceEditMode) {
       setEditState({ x: 0, y: 0 });
@@ -109,6 +128,7 @@ const ItemInner = memo(function ItemInner({
 
   return (
     <div
+      ref={clickOutsideRef}
       // eslint-disable-next-line react/no-unknown-property
       onDblClick={onDoubleClick}
       onContextMenu={onContextMenu}
