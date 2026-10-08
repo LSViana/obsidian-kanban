@@ -21,7 +21,8 @@ export type CardModalLayout = 'center' | 'left' | 'right';
 const AUTOSAVE_DELAY_MS = 750;
 
 // Wait a bit before opening on click so a double-click can still start inline editing.
-const SINGLE_CLICK_DELAY_MS = 125;
+// A new pointer press during the wait cancels the open.
+const SINGLE_CLICK_DELAY_MS = 150;
 const IGNORE_CLICK_AFTER_DRAG_MS = 300;
 
 const INTERACTIVE_SELECTOR = [
@@ -55,6 +56,7 @@ export function useOpenCardOnClick(enabled: boolean, editState: EditState, openC
   const { view } = useContext(KanbanContext);
   const dndManager = useContext(DndManagerContext);
   const timerRef = useRef<number | null>(null);
+  const removePressListenerRef = useRef<(() => void) | null>(null);
   const isDraggingRef = useRef(false);
   const lastDragEndRef = useRef(0);
 
@@ -62,6 +64,10 @@ export function useOpenCardOnClick(enabled: boolean, editState: EditState, openC
     if (timerRef.current !== null) {
       view.getWindow().clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+    if (removePressListenerRef.current) {
+      removePressListenerRef.current();
+      removePressListenerRef.current = null;
     }
   }, [view]);
 
@@ -105,8 +111,18 @@ export function useOpenCardOnClick(enabled: boolean, editState: EditState, openC
       if (selection && !selection.isCollapsed) return;
 
       cancelPendingOpen();
-      timerRef.current = view.getWindow().setTimeout(() => {
+
+      // The second press of a double-click starts before its click event, so cancel on it.
+      // Uses pointerdown in the capture phase because the drag handle prevents mousedown.
+      const win = view.getWindow();
+      const onPress = () => cancelPendingOpen();
+      win.addEventListener('pointerdown', onPress, true);
+      removePressListenerRef.current = () => win.removeEventListener('pointerdown', onPress, true);
+
+      timerRef.current = win.setTimeout(() => {
         timerRef.current = null;
+        removePressListenerRef.current?.();
+        removePressListenerRef.current = null;
         openCard();
       }, SINGLE_CLICK_DELAY_MS);
     },
