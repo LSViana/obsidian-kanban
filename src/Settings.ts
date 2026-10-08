@@ -169,6 +169,7 @@ export class SettingsManager {
   settings: KanbanSettings;
   cleanupFns: Array<() => void> = [];
   applyDebounceTimer: number = 0;
+  applyDebounceWin: Window | null = null;
 
   constructor(plugin: KanbanPlugin, config: SettingsManagerConfig, settings: KanbanSettings) {
     this.app = plugin.app;
@@ -178,12 +179,24 @@ export class SettingsManager {
   }
 
   applySettingsUpdate(spec: Spec<KanbanSettings>) {
-    this.win.clearTimeout(this.applyDebounceTimer);
+    // Apply right away so quick successive changes all land; only the save is debounced.
+    this.settings = update(this.settings, spec);
 
-    this.applyDebounceTimer = this.win.setTimeout(() => {
-      this.settings = update(this.settings, spec);
-      this.config.onSettingsChange(this.settings);
-    }, 1000);
+    this.applyDebounceWin?.clearTimeout(this.applyDebounceTimer);
+    this.applyDebounceWin = this.win ?? activeWindow;
+    this.applyDebounceTimer = this.applyDebounceWin.setTimeout(
+      () => this.flushSettingsUpdate(),
+      1000
+    );
+  }
+
+  flushSettingsUpdate() {
+    if (!this.applyDebounceWin) return;
+
+    this.applyDebounceWin.clearTimeout(this.applyDebounceTimer);
+    this.applyDebounceWin = null;
+    this.applyDebounceTimer = 0;
+    this.config.onSettingsChange(this.settings);
   }
 
   getSetting(key: keyof KanbanSettings, local: boolean) {
@@ -1605,9 +1618,11 @@ export class SettingsManager {
   }
 
   cleanUp() {
-    this.win = null;
+    // Cleanup fns (e.g. Choices.destroy) may fire change events, so run them before the flush.
     this.cleanupFns.forEach((fn) => fn());
     this.cleanupFns = [];
+    this.flushSettingsUpdate();
+    this.win = null;
   }
 }
 
@@ -1655,5 +1670,10 @@ export class KanbanSettingsTab extends PluginSettingTab {
     containerEl.addClass(c('board-settings-modal'));
 
     this.settingsManager.constructUI(containerEl, t('Kanban Plugin'), false);
+  }
+
+  hide() {
+    this.settingsManager.cleanUp();
+    this.containerEl.empty();
   }
 }
