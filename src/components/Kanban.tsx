@@ -18,9 +18,14 @@ import { frontmatterKey } from '../parsers/common';
 import { Icon } from './Icon/Icon';
 import { Lanes } from './Lane/Lane';
 import { LaneForm } from './Lane/LaneForm';
+import { deleteSelectedCards } from './Selection/BulkMenu';
 import { SelectionBar } from './Selection/SelectionBar';
 import { SelectionManager, getDragGroup, registerSelection } from './Selection/SelectionManager';
-import { useBoxSelect, useClearSelectionOnEscape } from './Selection/useBoxSelect';
+import {
+  useBoxSelect,
+  useClearSelectionOnEscape,
+  useDeleteSelectionOnKey,
+} from './Selection/useBoxSelect';
 import { TableView } from './Table/Table';
 import { KanbanContext, SearchContext, SelectionContext } from './context';
 import { baseClassName, c, useSearchValue } from './helpers';
@@ -197,6 +202,12 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
 
   useBoxSelect(view, selection, canSelect);
   useClearSelectionOnEscape(view, selection);
+
+  const deleteSelection = useCallback(
+    () => deleteSelectedCards({ stateManager, boardModifiers, selection }),
+    [stateManager, boardModifiers, selection]
+  );
+  useDeleteSelectionOnKey(view, selection, deleteSelection);
 
   useEffect(() => registerSelection(view.id, selection), [view, selection]);
 

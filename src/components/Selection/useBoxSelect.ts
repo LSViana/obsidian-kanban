@@ -1,4 +1,4 @@
-import { Keymap } from 'obsidian';
+import { Keymap, Platform } from 'obsidian';
 import { useEffect } from 'preact/compat';
 import type { KanbanView } from 'src/KanbanView';
 
@@ -152,26 +152,56 @@ export function useBoxSelect(view: KanbanView, selection: SelectionManager, enab
   }, [view, selection, enabled]);
 }
 
+// True when the board view owns the key: it is the active view and nothing else is typing,
+// showing a menu, or showing a modal.
+function isBoardKey(view: KanbanView, win: Window, e: KeyboardEvent) {
+  if (e.defaultPrevented) return false;
+  if (view.app.workspace.getActiveViewOfType(view.constructor as typeof KanbanView) !== view) {
+    return false;
+  }
+
+  const doc = win.document;
+  const active = doc.activeElement as HTMLElement | null;
+  if (active?.closest?.(EDITABLE_SELECTOR)) return false;
+  if (doc.body.querySelector('.modal-container, .menu')) return false;
+
+  return true;
+}
+
 /** Escape clears the selection when the board is focused and nothing else wants the key. */
 export function useClearSelectionOnEscape(view: KanbanView, selection: SelectionManager) {
   useEffect(() => {
     const win = view.getWindow();
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || !selection.size) return;
-      if (view.app.workspace.getActiveViewOfType(view.constructor as typeof KanbanView) !== view) {
-        return;
-      }
-
-      const doc = win.document;
-      const active = doc.activeElement as HTMLElement | null;
-      if (active?.closest?.(EDITABLE_SELECTOR)) return;
-      if (doc.body.querySelector('.modal-container, .menu')) return;
-
+      if (e.key !== 'Escape' || !selection.size || !isBoardKey(view, win, e)) return;
       selection.clear();
     };
 
     win.addEventListener('keydown', onKeyDown);
     return () => win.removeEventListener('keydown', onKeyDown);
   }, [view, selection]);
+}
+
+/** Del (and Backspace on macOS) deletes the selected cards, same as the menu's Delete. */
+export function useDeleteSelectionOnKey(
+  view: KanbanView,
+  selection: SelectionManager,
+  onDelete: () => void
+) {
+  useEffect(() => {
+    const win = view.getWindow();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isDeleteKey = e.key === 'Delete' || (Platform.isMacOS && e.key === 'Backspace');
+      if (!isDeleteKey || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (!selection.size || !isBoardKey(view, win, e)) return;
+
+      e.preventDefault();
+      onDelete();
+    };
+
+    win.addEventListener('keydown', onKeyDown);
+    return () => win.removeEventListener('keydown', onKeyDown);
+  }, [view, selection, onDelete]);
 }

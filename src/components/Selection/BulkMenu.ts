@@ -59,6 +59,21 @@ interface BulkMenuParams {
   selection: SelectionManager;
 }
 
+/** Deletes every selected card. Asks first when more than one card is selected. */
+export function deleteSelectedCards({ stateManager, boardModifiers, selection }: BulkMenuParams) {
+  const ids = selection.getIds();
+  const count = resolveSelection(stateManager.state, ids).length;
+  if (!count) return;
+
+  confirmIfMany(
+    stateManager.app,
+    count,
+    t('Delete the selected cards? This cannot be undone.'),
+    `${t('Delete')} ${count}`,
+    () => boardModifiers.deleteItems(ids)
+  );
+}
+
 /**
  * Card menu for two or more selected cards. Actions run on every selected card as one board
  * update. Actions that only make sense for one card are shown disabled.
@@ -155,15 +170,7 @@ export function showBulkMenu(position: { x: number; y: number }, params: BulkMen
     .addItem((i) => {
       i.setIcon('lucide-trash-2')
         .setTitle(t('Delete cards'))
-        .onClick(() =>
-          confirmIfMany(
-            app,
-            count,
-            t('Delete the selected cards? This cannot be undone.'),
-            `${t('Delete')} ${count}`,
-            () => boardModifiers.deleteItems(ids)
-          )
-        );
+        .onClick(() => deleteSelectedCards(params));
     });
 
   menu.addSeparator();
