@@ -646,6 +646,15 @@ button.kanban-plugin__lane-settings-button + button.kanban-plugin__lane-settings
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+
+  // Match the rendered card, which uses --font-preferred-size from the body
+  .markdown-source-view.mod-cm6 {
+    font-size: var(--font-preferred-size);
+  }
+}
+
+.kanban-plugin__item-title-wrapper > .kanban-plugin__item-input-wrapper {
+  margin-block-start: 1px;
 }
 
 .kanban-plugin button.kanban-plugin__item-submit-button {
