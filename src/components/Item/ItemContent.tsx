@@ -1,4 +1,5 @@
 import { EditorView } from '@codemirror/view';
+import { Component, MarkdownRenderer as ObsidianRenderer } from 'obsidian';
 import { memo } from 'preact/compat';
 import {
   Dispatch,
@@ -145,8 +146,12 @@ export function Tags({
         const tagColor = getTagColor(tag);
 
         return (
-          <a
-            href={tag}
+          <TagLink
+            key={i}
+            tag={tag}
+            color={tagColor?.color}
+            backgroundColor={tagColor?.backgroundColor}
+            isSearchMatch={!!searchQuery && tag.toLocaleLowerCase().contains(searchQuery)}
             onClick={(e) => {
               e.preventDefault();
 
@@ -160,24 +165,67 @@ export function Tags({
                 .getPluginById('global-search')
                 .instance.openGlobalSearch(`tag:${tag}`);
             }}
-            key={i}
-            className={`tag ${c('item-tag')} ${
-              searchQuery && tag.toLocaleLowerCase().contains(searchQuery) ? 'is-search-match' : ''
-            }`}
-            style={
-              tagColor && {
-                '--tag-color': tagColor.color,
-                '--tag-background': tagColor.backgroundColor,
-              }
-            }
-          >
-            <span>{tag[0]}</span>
-            {tag.slice(1)}
-          </a>
+          />
         );
       })}
     </div>
   );
+}
+
+// Footer tags go through Obsidian's markdown renderer so that markdown post-processors
+// from other plugins (for example Iconic's tag icons and colors) also apply to them.
+function TagLink({
+  tag,
+  color,
+  backgroundColor,
+  isSearchMatch,
+  onClick,
+}: {
+  tag: string;
+  color?: string;
+  backgroundColor?: string;
+  isSearchMatch: boolean;
+  onClick: (e: MouseEvent) => void;
+}) {
+  const { stateManager, filePath } = useContext(KanbanContext);
+  const elRef = useRef<HTMLSpanElement>();
+
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+
+    let cancelled = false;
+    const component = new Component();
+    component.load();
+
+    const applyKanbanState = (tagEl: HTMLElement) => {
+      tagEl.addClass(c('item-tag'));
+      tagEl.toggleClass('is-search-match', isSearchMatch);
+      if (color) tagEl.style.setProperty('--tag-color', color);
+      if (backgroundColor) tagEl.style.setProperty('--tag-background', backgroundColor);
+    };
+
+    const renderEl = createDiv();
+    ObsidianRenderer.render(stateManager.app, tag, renderEl, filePath, component)
+      .catch(() => null)
+      .then(() => {
+        if (cancelled) return;
+        let tagEl = renderEl.querySelector<HTMLElement>('a.tag');
+        if (!tagEl) {
+          tagEl = createEl('a', { cls: 'tag', href: tag, text: tag });
+        }
+        applyKanbanState(tagEl);
+        el.empty();
+        el.append(tagEl);
+      });
+
+    return () => {
+      cancelled = true;
+      component.unload();
+    };
+  }, [tag, color, backgroundColor, isSearchMatch, filePath]);
+
+  return <span ref={elRef} onClick={onClick} />;
 }
 
 export const ItemContent = memo(function ItemContent({
