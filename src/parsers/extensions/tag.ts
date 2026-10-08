@@ -10,6 +10,7 @@ export function tagExtension(): Extension {
 
   function tokenize(effects: Effects, ok: State, nok: State) {
     let data = false;
+    let hasNonDigit = false;
     let startMarkerCursor = 0;
     const self = this;
 
@@ -59,7 +60,8 @@ export function tagExtension(): Extension {
           String.fromCharCode(code)
         )
       ) {
-        if (!data) return nok(code);
+        // Obsidian requires at least one non-numerical character, so `#1` is not a tag
+        if (!data || !hasNonDigit) return nok(code);
         effects.exit(`${name}Target` as any);
         effects.exit(`${name}Data` as any);
         effects.exit(name as any);
@@ -68,6 +70,7 @@ export function tagExtension(): Extension {
       }
 
       data = true;
+      if (code < 48 || code > 57) hasNonDigit = true;
       effects.consume(code);
 
       return consumeTarget;
