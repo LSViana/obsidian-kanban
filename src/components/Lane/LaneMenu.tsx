@@ -149,6 +149,7 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
         item
           .setIcon('lucide-trash-2')
           .setTitle(t('Delete list'))
+          .setWarning(true)
           .onClick(() => setConfirmAction('delete'));
       })
       .addSeparator();

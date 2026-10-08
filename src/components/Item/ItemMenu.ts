@@ -276,6 +276,7 @@ export function useItemMenu({
         .addItem((i) => {
           i.setIcon('lucide-trash-2')
             .setTitle(t('Delete card'))
+            .setWarning(true)
             .onClick(() => boardModifiers.deleteEntity(path));
         })
         .addSeparator()

@@ -170,6 +170,7 @@ export function showBulkMenu(position: { x: number; y: number }, params: BulkMen
     .addItem((i) => {
       i.setIcon('lucide-trash-2')
         .setTitle(t('Delete cards'))
+        .setWarning(true)
         .onClick(() => deleteSelectedCards(params));
     });
 
