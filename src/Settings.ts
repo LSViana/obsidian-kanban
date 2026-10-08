@@ -49,6 +49,8 @@ const numberRegEx = /^\d+(?:\.\d+)?$/;
 
 export type KanbanFormat = 'basic' | 'board' | 'table' | 'list';
 
+export type NewNoteOpenIn = 'split-right' | 'split-below' | 'tab' | 'same-tab' | 'window';
+
 export interface KanbanSettings {
   [frontmatterKey]?: KanbanFormat;
   'append-archive-date'?: boolean;
@@ -76,6 +78,7 @@ export interface KanbanSettings {
   'new-line-trigger'?: 'enter' | 'shift-enter';
   'new-note-folder'?: string;
   'new-note-template'?: string;
+  'new-note-open-in'?: NewNoteOpenIn;
   'show-add-list'?: boolean;
   'show-archive-all'?: boolean;
   'show-board-settings'?: boolean;
@@ -126,6 +129,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'new-line-trigger',
   'new-note-folder',
   'new-note-template',
+  'new-note-open-in',
   'show-add-list',
   'show-archive-all',
   'show-board-settings',
@@ -511,6 +515,32 @@ export class SettingsManager {
           manager: this,
         })
       );
+
+    new Setting(contentEl)
+      .setName(t('Open new note in'))
+      .setDesc(
+        t(
+          'Where notes created from Kanban cards will open. Hold Ctrl (Cmd on macOS) when clicking to open in a new tab, add Alt to open in a split, and add Shift to open in a new window.'
+        )
+      )
+      .addDropdown((dropdown) => {
+        dropdown.addOption('split-right', t('Split right'));
+        dropdown.addOption('split-below', t('Split below'));
+        dropdown.addOption('tab', t('New tab'));
+        dropdown.addOption('same-tab', t('Same tab'));
+        dropdown.addOption('window', t('New window'));
+
+        const [value, globalValue] = this.getSetting('new-note-open-in', local);
+
+        dropdown.setValue((value as string) || (globalValue as string) || 'split-right');
+        dropdown.onChange((value) => {
+          this.applySettingsUpdate({
+            'new-note-open-in': {
+              $set: value as NewNoteOpenIn,
+            },
+          });
+        });
+      });
 
     contentEl.createEl('h4', { text: t('Tags') });
 

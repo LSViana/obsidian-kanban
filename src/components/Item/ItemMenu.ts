@@ -1,5 +1,5 @@
 import update from 'immutability-helper';
-import { Menu, Platform, TFile, TFolder } from 'obsidian';
+import { Keymap, Menu, Platform, TFile, TFolder, WorkspaceLeaf } from 'obsidian';
 import { Dispatch, StateUpdater, useCallback } from 'preact/hooks';
 import { StateManager } from 'src/StateManager';
 import { Path } from 'src/dnd/types';
@@ -22,6 +22,32 @@ const wikilinkRegEx = /!?\[\[([^\]]*)\]\]/g;
 const mdLinkRegEx = /!?\[([^\]]*)\]\([^)]*\)/g;
 const tagRegEx = /#([^\u2000-\u206F\u2E00-\u2E7F'!"#$%&()*+,.:;<=>?@^`{|}~[\]\\\s\n\r]+)/g;
 const condenceWhiteSpaceRE = /\s+/g;
+
+function getNewNoteLeaf(
+  stateManager: StateManager,
+  evt: MouseEvent | KeyboardEvent
+): WorkspaceLeaf {
+  const { workspace } = stateManager.app;
+  const modPane = Keymap.isModEvent(evt);
+  const openIn = modPane
+    ? modPane === true
+      ? 'tab'
+      : modPane
+    : stateManager.getSetting('new-note-open-in') || 'split-right';
+
+  switch (openIn) {
+    case 'split-below':
+      return workspace.getLeaf('split', 'horizontal');
+    case 'tab':
+      return workspace.getLeaf('tab');
+    case 'same-tab':
+      return workspace.getLeaf(false);
+    case 'window':
+      return Platform.isMobile ? workspace.getLeaf('tab') : workspace.getLeaf('window');
+    default:
+      return workspace.getLeaf('split', 'vertical');
+  }
+}
 
 interface UseItemMenuParams {
   setEditState: Dispatch<StateUpdater<EditState>>;
@@ -54,7 +80,7 @@ export function useItemMenu({
         .addItem((i) => {
           i.setIcon('lucide-file-plus-2')
             .setTitle(t('New note from card'))
-            .onClick(async () => {
+            .onClick(async (evt) => {
               const prevTitle = item.data.titleRaw.split('\n')[0].trim();
               const sanitizedTitle = prevTitle
                 .replace(embedRegEx, '$1')
@@ -77,7 +103,7 @@ export function useItemMenu({
                 sanitizedTitle
               )) as TFile;
 
-              const newLeaf = stateManager.app.workspace.splitActiveLeaf();
+              const newLeaf = getNewNoteLeaf(stateManager, evt);
 
               await newLeaf.openFile(newFile);
 

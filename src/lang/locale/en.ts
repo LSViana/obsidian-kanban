@@ -66,6 +66,14 @@ const en = {
   'Notes created from Kanban cards will be placed in this folder. If blank, they will be placed in the default location for this vault.':
     'Notes created from Kanban cards will be placed in this folder. If blank, they will be placed in the default location for this vault.',
   'Default folder': 'Default folder',
+  'Open new note in': 'Open new note in',
+  'Where notes created from Kanban cards will open. Hold Ctrl (Cmd on macOS) when clicking to open in a new tab, add Alt to open in a split, and add Shift to open in a new window.':
+    'Where notes created from Kanban cards will open. Hold Ctrl (Cmd on macOS) when clicking to open in a new tab, add Alt to open in a split, and add Shift to open in a new window.',
+  'Split right': 'Split right',
+  'Split below': 'Split below',
+  'New tab': 'New tab',
+  'Same tab': 'Same tab',
+  'New window': 'New window',
   'List width': 'List width',
   'Expand lists to full width in list view': 'Expand lists to full width in list view',
   'Enter a number to set the list width in pixels.':
