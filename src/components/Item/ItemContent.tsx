@@ -14,6 +14,7 @@ import {
 import { StateManager } from 'src/StateManager';
 import { useNestedEntityPath } from 'src/dnd/components/Droppable';
 import { Path } from 'src/dnd/types';
+import { parentFieldRegex } from 'src/parsers/formats/list';
 import { getTaskStatusDone, toggleTaskString } from 'src/parsers/helpers/inlineMetadata';
 
 import { MarkdownEditor, allowNewLine } from '../Editor/MarkdownEditor';
@@ -263,6 +264,11 @@ function TagLink({
   return <span ref={elRef} onClick={onClick} />;
 }
 
+// True for text that holds nothing but a `parent::` field
+function isOnlyParentField(text: string) {
+  return parentFieldRegex.test(text) && !text.replace(parentFieldRegex, '$1').trim();
+}
+
 export const ItemContent = memo(function ItemContent({
   item,
   editState,
@@ -285,9 +291,24 @@ export const ItemContent = memo(function ItemContent({
   const displayMarkdown = hideRest ? displayParts.first : item.data.title;
   const markdownClassName = hideRest ? `${c('item-markdown')} has-hidden-lines` : c('item-markdown');
 
+  // A child card just added from the menu. It opens with two blank lines above the
+  // parent field so the user can type right away, and is removed if left empty.
+  const isNewChild = !!item.data.forceEditMode && isOnlyParentField(item.data.titleRaw);
+  const wasEditingRef = useRef(false);
+
   useEffect(() => {
+    if (isEditing(editState)) {
+      wasEditingRef.current = true;
+      return;
+    }
+
+    const removeIfEmpty = isNewChild && wasEditingRef.current;
+    wasEditingRef.current = false;
+
     if (editState === EditingState.complete) {
-      if (titleRef.current !== null) {
+      if (removeIfEmpty && isOnlyParentField(titleRef.current ?? item.data.titleRaw)) {
+        boardModifiers.deleteItems(new Set([item.id]));
+      } else if (titleRef.current !== null) {
         let nextTitle = titleRef.current;
         if (editFirstLineOnly) {
           nextTitle = nextTitle ? `${nextTitle}\n${rawParts.rest}` : rawParts.rest;
@@ -296,9 +317,10 @@ export const ItemContent = memo(function ItemContent({
       }
       titleRef.current = null;
     } else if (editState === EditingState.cancel) {
+      if (removeIfEmpty) boardModifiers.deleteItems(new Set([item.id]));
       titleRef.current = null;
     }
-  }, [editState, stateManager, item, editFirstLineOnly, rawParts]);
+  }, [editState, stateManager, item, editFirstLineOnly, rawParts, isNewChild]);
 
   const path = useNestedEntityPath();
   const { onEditDate, onEditTime } = useDatePickers(item);
@@ -360,7 +382,13 @@ export const ItemContent = memo(function ItemContent({
           onEnter={onEnter}
           onEscape={onEscape}
           onSubmit={onSubmit}
-          value={editFirstLineOnly ? rawParts.first : item.data.titleRaw}
+          value={
+            isNewChild
+              ? `\n\n${item.data.titleRaw}`
+              : editFirstLineOnly
+                ? rawParts.first
+                : item.data.titleRaw
+          }
           onChange={(update) => {
             if (update.docChanged) {
               titleRef.current = update.state.doc.toString().trim();
