@@ -1812,6 +1812,67 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   }
 }
 
+// Card modal (Open card). Layout classes on the container: center now, left/right reserved for side peek.
+.kanban-plugin__card-modal-container .modal.kanban-plugin__card-modal {
+  width: min(720px, 90vw);
+  max-height: 85vh;
+  padding: var(--size-4-6) var(--size-4-8);
+}
+
+.kanban-plugin__card-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  overflow-y: auto;
+}
+
+.kanban-plugin__card-modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: var(--icon-l);
+  padding-inline-end: var(--size-4-8);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.kanban-plugin__card-modal-lane {
+  flex-grow: 1;
+}
+
+.kanban-plugin__card-modal-editor {
+  .markdown-source-view.mod-cm6 {
+    display: block;
+    font-size: var(--font-text-size);
+
+    .cm-scroller {
+      overflow: visible;
+    }
+
+    .cm-content {
+      min-height: 8em;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+  }
+}
+
+.kanban-plugin__card-modal-metadata:empty {
+  display: none;
+}
+
+.kanban-plugin__card-modal-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.is-mobile .kanban-plugin__card-modal-container .modal.kanban-plugin__card-modal {
+  width: 100%;
+  max-height: 100%;
+}
+
 // Parent and child card badges (K6)
 .kanban-plugin__family-badges {
   display: flex;
@@ -1869,4 +1930,17 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
 .kanban-plugin__item.is-family-flash {
   box-shadow: 0 0 0 2px var(--interactive-accent);
   transition: box-shadow 150ms ease-in-out;
+}
+
+.kanban-plugin__item-content-wrapper.kanban-plugin__opens-on-click {
+  cursor: pointer;
+}
+
+// Keep date/time pickers and suggestions above the card modal while it is open.
+body:has(.kanban-plugin__card-modal-container) {
+  .kanban-plugin__date-picker,
+  .kanban-plugin__time-picker,
+  .suggestion-container {
+    z-index: var(--layer-notice);
+  }
 }

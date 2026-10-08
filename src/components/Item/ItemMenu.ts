@@ -56,6 +56,7 @@ interface UseItemMenuParams {
   path: Path;
   boardModifiers: BoardModifiers;
   stateManager: StateManager;
+  openCard?: () => void;
 }
 
 export function useItemMenu({
@@ -64,6 +65,7 @@ export function useItemMenu({
   path,
   boardModifiers,
   stateManager,
+  openCard,
 }: UseItemMenuParams) {
   return useCallback(
     (e: MouseEvent) => {
@@ -76,6 +78,12 @@ export function useItemMenu({
           .setTitle(t('Edit card'))
           .onClick(() => setEditState(coordinates));
       });
+
+      if (openCard) {
+        menu.addItem((i) => {
+          i.setIcon('lucide-maximize-2').setTitle(t('Open card')).onClick(openCard);
+        });
+      }
 
       menu
         .addItem((i) => {
@@ -329,6 +337,6 @@ export function useItemMenu({
 
       menu.showAtPosition(coordinates);
     },
-    [setEditState, item, path, boardModifiers, stateManager]
+    [setEditState, item, path, boardModifiers, stateManager, openCard]
   );
 }

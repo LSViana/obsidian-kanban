@@ -229,6 +229,15 @@ const en = {
 
   // components/Item/ItemMenu.ts
   'Edit card': 'Edit card',
+  'Open card': 'Open card',
+  'Open card on single click': 'Open card on single click',
+  'When toggled, clicking a card opens it in a pop-up. Double-click still edits the card in place.':
+    'When toggled, clicking a card opens it in a pop-up. Double-click still edits the card in place.',
+  'Open linked note': 'Open linked note',
+  'This card no longer exists. Your text was copied to the clipboard.':
+    'This card no longer exists. Your text was copied to the clipboard.',
+  'This card was changed somewhere else while it was open. Your version was saved.':
+    'This card was changed somewhere else while it was open. Your version was saved.',
   'New note from card': 'New note from card',
   'Archive card': 'Archive card',
   'Delete card': 'Delete card',

@@ -94,6 +94,7 @@ export interface KanbanSettings {
   'time-format'?: string;
   'time-trigger'?: string;
   'truncate-lane-titles'?: boolean;
+  'open-card-on-click'?: boolean;
 }
 
 export interface KanbanViewSettings {
@@ -116,6 +117,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'full-list-lane-width',
   'hide-card-count',
   'truncate-lane-titles',
+  'open-card-on-click',
   'inline-metadata-position',
   'lane-width',
   'link-date-to-daily-note',
@@ -386,6 +388,50 @@ export class SettingsManager {
 
                 this.applySettingsUpdate({
                   $unset: ['truncate-lane-titles'],
+                });
+              });
+          });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Open card on single click'))
+      .setDesc(
+        t(
+          'When toggled, clicking a card opens it in a pop-up. Double-click still edits the card in place.'
+        )
+      )
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('open-card-on-click', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'open-card-on-click': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('open-card-on-click', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['open-card-on-click'],
                 });
               });
           });

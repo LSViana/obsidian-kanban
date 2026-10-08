@@ -7,13 +7,14 @@ import { moveEntity } from 'src/dnd/util/data';
 
 import { Icon } from '../Icon/Icon';
 import { DateAndTime, RelativeDate } from '../Item/DateAndTime';
+import { CardModalPortal, useOpenCardOnClick } from '../Item/CardModal';
 import { ItemCheckbox } from '../Item/ItemCheckbox';
 import { ItemContent, useDatePickers } from '../Item/ItemContent';
 import { useItemMenu } from '../Item/ItemMenu';
 import { MarkdownRenderer } from '../MarkdownRenderer/MarkdownRenderer';
 import { KanbanContext, SearchContext } from '../context';
 import { c, useGetDateColorFn } from '../helpers';
-import { EditState, Item, Lane, isEditing } from '../types';
+import { EditState, EditingState, Item, Lane, isEditing } from '../types';
 import { TableItem } from './types';
 
 export const DateCell = memo(function DateCell({
@@ -53,7 +54,22 @@ export const ItemCell = memo(
     const { stateManager, boardModifiers } = useContext(KanbanContext);
     const search = useContext(SearchContext);
     const [editState, setEditState] = useState<EditState>(null);
+    const [isCardOpen, setIsCardOpen] = useState(false);
     const shouldMarkItemsComplete = !!lane.data.shouldMarkItemsComplete;
+
+    const openCard = useCallback(() => {
+      setEditState((state) => (isEditing(state) ? EditingState.complete : state));
+      setIsCardOpen(true);
+    }, []);
+
+    const closeCard = useCallback(() => setIsCardOpen(false), []);
+
+    const openCardOnClick = !!stateManager.useSetting('open-card-on-click');
+    const { onClick: onCardClick, cancelPendingOpen } = useOpenCardOnClick(
+      openCardOnClick,
+      editState,
+      openCard
+    );
 
     const showItemMenu = useItemMenu({
       boardModifiers,
@@ -61,6 +77,7 @@ export const ItemCell = memo(
       setEditState,
       stateManager,
       path,
+      openCard,
     });
 
     const onContextMenu: JSX.MouseEventHandler<HTMLDivElement> = useCallback(
@@ -78,9 +95,13 @@ export const ItemCell = memo(
       [showItemMenu, editState]
     );
 
-    const onDoubleClick: JSX.MouseEventHandler<HTMLDivElement> = useCallback((e) => {
-      setEditState({ x: e.clientX, y: e.clientY });
-    }, []);
+    const onDoubleClick: JSX.MouseEventHandler<HTMLDivElement> = useCallback(
+      (e) => {
+        cancelPendingOpen();
+        setEditState({ x: e.clientX, y: e.clientY });
+      },
+      [cancelPendingOpen]
+    );
 
     return (
       <ExplicitPathContext.Provider value={path}>
@@ -88,7 +109,11 @@ export const ItemCell = memo(
           onContextMenu={onContextMenu}
           // eslint-disable-next-line react/no-unknown-property
           onDblClick={onDoubleClick}
-          className={c('item-content-wrapper')}
+          onClick={onCardClick}
+          className={classcat([
+            c('item-content-wrapper'),
+            { [c('opens-on-click')]: openCardOnClick && !isEditing(editState) },
+          ])}
         >
           <div className={c('item-title-wrapper')}>
             <ItemCheckbox
@@ -107,6 +132,7 @@ export const ItemCell = memo(
               isStatic={false}
             />
           </div>
+          {isCardOpen && <CardModalPortal item={item} onClose={closeCard} />}
         </div>
       </ExplicitPathContext.Provider>
     );

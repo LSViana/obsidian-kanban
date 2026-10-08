@@ -18,6 +18,7 @@ import { frontmatterKey } from 'src/parsers/common';
 import { KanbanContext, SearchContext } from '../context';
 import { c } from '../helpers';
 import { EditState, EditingState, Item, isEditing } from '../types';
+import { CardModalPortal, useOpenCardOnClick } from './CardModal';
 import { FamilyBadges } from './FamilyBadges';
 import { ItemCheckbox } from './ItemCheckbox';
 import { ItemContent } from './ItemContent';
@@ -50,6 +51,7 @@ const ItemInner = memo(function ItemInner({
 }: ItemInnerProps) {
   const { stateManager, boardModifiers } = useContext(KanbanContext);
   const [editState, setEditState] = useState<EditState>(EditingState.cancel);
+  const [isCardOpen, setIsCardOpen] = useState(false);
 
   const dndManager = useContext(DndManagerContext);
 
@@ -90,12 +92,27 @@ const ItemInner = memo(function ItemInner({
 
   const path = useNestedEntityPath();
 
+  const openCard = useCallback(() => {
+    setEditState((state) => (isEditing(state) ? EditingState.complete : state));
+    setIsCardOpen(true);
+  }, []);
+
+  const closeCard = useCallback(() => setIsCardOpen(false), []);
+
+  const openCardOnClick = !!stateManager.useSetting('open-card-on-click') && !isStatic;
+  const { onClick: onCardClick, cancelPendingOpen } = useOpenCardOnClick(
+    openCardOnClick,
+    editState,
+    openCard
+  );
+
   const showItemMenu = useItemMenu({
     boardModifiers,
     item,
     setEditState: setEditState,
     stateManager,
     path,
+    openCard: isStatic ? undefined : openCard,
   });
 
   const onContextMenu: JSX.MouseEventHandler<HTMLDivElement> = useCallback(
@@ -113,8 +130,11 @@ const ItemInner = memo(function ItemInner({
   );
 
   const onDoubleClick: JSX.MouseEventHandler<HTMLDivElement> = useCallback(
-    (e) => setEditState({ x: e.clientX, y: e.clientY }),
-    [setEditState]
+    (e) => {
+      cancelPendingOpen();
+      setEditState({ x: e.clientX, y: e.clientY });
+    },
+    [setEditState, cancelPendingOpen]
   );
 
   const ignoreAttr = useMemo(() => {
@@ -132,8 +152,12 @@ const ItemInner = memo(function ItemInner({
       ref={clickOutsideRef}
       // eslint-disable-next-line react/no-unknown-property
       onDblClick={onDoubleClick}
+      onClick={onCardClick}
       onContextMenu={onContextMenu}
-      className={c('item-content-wrapper')}
+      className={classcat([
+        c('item-content-wrapper'),
+        { [c('opens-on-click')]: openCardOnClick && !isEditing(editState) },
+      ])}
       {...ignoreAttr}
     >
       <div className={c('item-title-wrapper')} {...ignoreAttr}>
@@ -155,6 +179,7 @@ const ItemInner = memo(function ItemInner({
       </div>
       <FamilyBadges item={item} />
       <ItemMetadata searchQuery={isMatch ? searchQuery : undefined} item={item} />
+      {isCardOpen && <CardModalPortal item={item} onClose={closeCard} />}
     </div>
   );
 });
