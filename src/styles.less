@@ -2083,3 +2083,29 @@ body:has(.kanban-plugin__card-modal-container) {
     z-index: var(--layer-notice);
   }
 }
+
+// Iconic tag icons (K15)
+// The Iconic plugin puts an icon inside tags. Its default size is taller
+// than our small tag text, so tags with icons grow and push lines apart.
+// Size the icon to the text and keep it out of the line height math.
+.kanban-plugin,
+.kanban-plugin__drag-container,
+.kanban-plugin__card-modal-container {
+  a.tag > .iconic-icon {
+    --icon-size: 1em;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-block: 0;
+    // Pull the icon toward the tag edge and the text. Done here so the
+    // tag's own padding and gap stay untouched.
+    margin-inline-start: calc(var(--tag-padding-x) * -0.4);
+    margin-inline-end: calc(2px - var(--size-4-1));
+    line-height: 0;
+
+    > .svg-icon {
+      width: var(--icon-size);
+      height: var(--icon-size);
+    }
+  }
+}
