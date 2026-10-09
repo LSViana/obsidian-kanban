@@ -301,6 +301,40 @@ export function getBestIntersect(
   return hits[minValueIndex] ? hits[minValueIndex] : null;
 }
 
+// How far below a list's end slot a dragged card can be and still drop at the end
+export const endOfListReach = 200;
+
+/**
+ * Fallback drop target when the dragged card is over nothing: the end-of-list slot of the
+ * list whose column the card is in, if the card is below that slot (within endOfListReach).
+ * Lets a card dropped in a list's bottom padding, add-card area, or just below the list land
+ * at the end instead of snapping back.
+ */
+export function getEndOfListFallback(candidates: Entity[], dragHitbox: Hitbox): Entity | null {
+  const centerX = (dragHitbox[0] + dragHitbox[2]) / 2;
+  const top = dragHitbox[1];
+
+  let best: Entity | null = null;
+  let bestDistance = Infinity;
+
+  candidates.forEach((entity) => {
+    const data = entity.getData();
+    if (data.type !== 'placeholder' || data.sortAxis !== 'vertical') return;
+
+    const box = entity.getHitbox();
+    if (centerX < box[0] || centerX > box[2]) return;
+    if (top < box[1] || top > box[3] + endOfListReach) return;
+
+    const distance = top - box[1];
+    if (distance < bestDistance) {
+      best = entity;
+      bestDistance = distance;
+    }
+  });
+
+  return best;
+}
+
 export function getElementScrollOffsets(element: HTMLElement): ScrollState {
   const { scrollLeft, scrollTop, scrollWidth, scrollHeight, offsetWidth, offsetHeight } = element;
 

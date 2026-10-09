@@ -130,6 +130,16 @@
       "dependencies": [],
       "status": "done",
       "evidence": "In 2.2.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-014",
+      "name": "Drop at end of long list",
+      "description": "Fix: card dragged to end of long scrolling list snapped back or landed one spot too high. Drop target keeps updating while list auto-scrolls. Card released below last card, inside list column (up to 200px below end slot), drops at list end. Outside board or between lists still cancels.",
+      "files": ["src/dnd/managers/DragManager.ts", "src/dnd/util/hitbox.ts (getEndOfListFallback)"],
+      "commits": [],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "Root cause from user repro logs (6/15 drags lost target: frozen during auto-scroll, then card below 1-card end slot). Build OK, typecheck 41. User verified in Obsidian."
     }
   ]
 }

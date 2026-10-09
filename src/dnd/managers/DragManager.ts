@@ -12,6 +12,7 @@ import {
   adjustHitboxForMovement,
   distanceBetween,
   getBestIntersect,
+  getEndOfListFallback,
   getScrollIntersection,
 } from '../util/hitbox';
 
@@ -205,16 +206,11 @@ export class DragManager {
       this.dragPosition
     );
 
-    const isScrolling = this.handleScrollIntersect(
-      dragHitbox,
-      this.dragEntity,
-      scrollHitboxes,
-      scrollEntities
-    );
+    this.handleScrollIntersect(dragHitbox, this.dragEntity, scrollHitboxes, scrollEntities);
 
-    if (!isScrolling) {
-      this.handleHitboxIntersect(dragHitbox, this.dragEntity, hitboxHitboxes, hitboxEntities);
-    }
+    // Keep picking a drop target while a list auto-scrolls. The end of a long list sits in
+    // its bottom scroll zone, so skipping this while scrolling froze the target there.
+    this.handleHitboxIntersect(dragHitbox, this.dragEntity, hitboxHitboxes, hitboxEntities);
   }
 
   handleScrollIntersect(
@@ -313,7 +309,9 @@ export class DragManager {
       (match) => hitboxEntities[match[1]]
     );
 
-    const primaryIntersection = getBestIntersect(hits, dragHitbox, dragEntity);
+    const primaryIntersection =
+      getBestIntersect(hits, dragHitbox, dragEntity) ||
+      getEndOfListFallback(hitboxEntities, dragHitbox);
 
     if (this.primaryIntersection && this.primaryIntersection !== primaryIntersection) {
       this.emitter.emit('dragLeave', this.getDragEventData(), this.primaryIntersection.entityId);

@@ -22,3 +22,4 @@ Shared cross-session notes: open gaps + decisions. No per-session state here (th
 - New settings default off, global + per board.
 - Release notes hand-written, user-facing, grouped by area.
 - No GitHub releases: Actions disabled on fork. Tag push only.
+- Drag and drop: drop target updates during auto-scroll too. Empty space below list end (same column, 200px reach) counts as list end (feat-014).
