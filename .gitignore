@@ -15,3 +15,6 @@ dist
 test-vault/
 main.js
 styles.css
+
+# agent per-session notes
+session-handoff.md

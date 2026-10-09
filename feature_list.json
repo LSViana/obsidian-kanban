@@ -1,0 +1,135 @@
+{
+  "_note": "Feature map of fork additions on top of upstream (base 5134c05). One entry per user-visible feature. Text fields: caveman full style (see AGENTS.md). Add new entry per new feature; update files/commits when feature changes.",
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Lane title ellipsis toggle",
+      "description": "Long lane titles stay one line with ellipsis instead of wrapping. Setting 'truncate-lane-titles', global + per board, default off. Edit mode shows full title.",
+      "files": ["src/components/Lane/LaneTitle.tsx", "src/Settings.ts", "src/styles.less"],
+      "commits": ["b2adc83", "866e303"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-002",
+      "name": "Click outside saves card edit",
+      "description": "Inline card edit and 'Add a card' form save on outside click, like Enter. Editor popups (suggestions, date pickers, menus, modals) ignored. Only one card in inline edit at once. Empty new-card form just closes.",
+      "files": ["src/components/Item/Item.tsx", "src/components/Item/ItemForm.tsx"],
+      "commits": ["fb6c727", "90fa422", "2768c4d"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian. Gap: pop-out windows not handled."
+    },
+    {
+      "id": "feat-003",
+      "name": "Same font size in card edit mode",
+      "description": "Card editor uses var(--font-preferred-size) like rendered card, so text no longer shrinks on edit.",
+      "files": ["src/styles.less"],
+      "commits": ["e509cfc"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-004",
+      "name": "New note from card: open location",
+      "description": "Setting 'new-note-open-in' (split right default, split below, new tab, same tab, new window). Ctrl/Cmd, Ctrl+Alt, Ctrl+Alt+Shift click override like Obsidian links.",
+      "files": ["src/components/Item/ItemMenu.ts", "src/Settings.ts"],
+      "commits": ["2ff73ce"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-005",
+      "name": "New note from card: move card body",
+      "description": "Setting 'move-card-body-to-note', default off. Text after first line (blank line separated) moves into new note after template; card keeps title link + parent:: lines. Shares splitFirstLine with feat-008.",
+      "files": ["src/components/Item/ItemMenu.ts", "src/components/Item/helpers.ts", "src/Settings.ts"],
+      "commits": ["bce21af"],
+      "dependencies": ["feat-004", "feat-008"],
+      "status": "done",
+      "evidence": "In 2.2.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-006",
+      "name": "Settings apply right away",
+      "description": "Setting changes apply immediately; only save debounced, flushed on settings modal/tab close. Board settings save onto current board, not stale copy.",
+      "files": ["src/Settings.ts", "src/KanbanView.tsx"],
+      "commits": ["b4936f5"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-007",
+      "name": "Parent and child cards",
+      "description": "Child stores `parent:: [[#^id]]` pointing at parent block ID. Parent badge + children badge (n/m done), hover highlights family. Menu: Add child card, Set parent..., Remove parent. Click n/m badge lists children by lane + archived, jump or check off. New child opens with room to type; empty or Escape removes it. Setting 'count-archived-children-as-done', default off.",
+      "files": ["src/components/Item/FamilyBadges.tsx (getFamilyIndex, FamilyBadges, addFamilyMenuItems)", "src/components/Item/ParentPickerModal.ts", "src/components/Item/ChildListPopover.ts (openChildList, toggleChildList)", "src/components/Item/ItemContent.tsx", "src/parsers/formats/list.ts", "src/Settings.ts", "src/styles.less"],
+      "commits": ["9923a5a", "44ba72e", "cf31754", "61bfb47"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0 + 2.2.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-008",
+      "name": "Show only first line of cards",
+      "description": "Setting 'show-first-line-only', default off. Card with blank line after first line shows only that line plus faint ellipsis; rest in pop-up. Inline edit edits first line only. Table view unaffected; search hit in hidden text shows full card.",
+      "files": ["src/components/Item/ItemContent.tsx", "src/components/Item/helpers.ts (splitFirstLine)", "src/Settings.ts", "src/styles.less"],
+      "commits": ["b4dfb1d", "bce21af"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-009",
+      "name": "Card pop-up editor",
+      "description": "'Open card' menu item opens card in Obsidian modal: editor, dates, tags, linked note. Esc, outside click, Ctrl+Enter save + close; autosave; saves find card by id. Setting 'open-card-on-click' (single click opens, 150ms wait so double-click still edits inline). Title bar ('List: name') + Windows-style buttons, tag footer (unique tags, '+N hidden tags'), fixed width near top, max 80% height. App hotkeys work inside (scope falls back to app scope). Ctrl+F opens editor search. Stays transparent until editor ready (class 'kanban-plugin__card-modal-preparing').",
+      "files": ["src/components/Item/CardModal.tsx (CardModalPortal, useOpenCardOnClick)", "src/components/Item/Item.tsx", "src/components/Item/ItemMenu.ts", "src/components/Editor/MarkdownEditor.tsx", "src/components/Table/Cells.tsx", "src/Settings.ts", "src/styles.less"],
+      "commits": ["35f8098", "8c4a208", "826e23c", "3efb9cc", "b48b88b", "d28bde2", "c373bf6", "2687915", "206559c"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0; 206559c after 2.2.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-010",
+      "name": "Tag rendering fixes (Iconic + Obsidian rules)",
+      "description": "Footer tags rendered through MarkdownRenderer so Iconic plugin icons/colors apply. Iconic icon sized 1em so tags keep text height. Number-only hashtags (#1) stay plain text, like Obsidian.",
+      "files": ["src/components/Item/ItemContent.tsx", "src/parsers/extensions/tag.ts", "src/styles.less"],
+      "commits": ["db9f508", "5f75d97", "2d7b1e2"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-011",
+      "name": "Search highlight",
+      "description": "Footer tags highlight matched letters with mark.js like card text. Solid yellow mark, dark text, readable in light + dark themes.",
+      "files": ["src/components/Item/ItemContent.tsx", "src/styles.less"],
+      "commits": ["7165363"],
+      "dependencies": ["feat-010"],
+      "status": "done",
+      "evidence": "In 2.1.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-012",
+      "name": "Multi-select cards",
+      "description": "Ctrl/Cmd+click or box drag on empty space selects cards. Right-click selected card: copy links, mark done, move to list, archive, delete. Drag selected card moves group. Del (Backspace on macOS) deletes selection, asks when more than one. Alt (Option) during drag copies instead; copied parent/child stay linked; same board only.",
+      "files": ["src/components/Selection/SelectionManager.ts", "src/components/Selection/useBoxSelect.ts (useBoxSelect, useDeleteSelectionOnKey)", "src/components/Selection/BulkMenu.ts (showBulkMenu, deleteSelectedCards)", "src/components/Selection/SelectionBar.tsx", "src/components/Selection/groupMove.ts (moveSelectionTo, copySelectionTo)", "src/components/Selection/useCopyModifier.ts", "src/components/Kanban.tsx", "src/DragDropApp.tsx", "src/helpers/boardModifiers.ts"],
+      "commits": ["57ad431", "f5522ff", "d5451e1"],
+      "dependencies": ["feat-007"],
+      "status": "done",
+      "evidence": "In 2.1.0 + 2.2.0. User verified in Obsidian."
+    },
+    {
+      "id": "feat-013",
+      "name": "Red delete actions in menus",
+      "description": "Delete items in card, lane and bulk menus shown red (setWarning), like Obsidian menus.",
+      "files": ["src/components/Item/ItemMenu.ts", "src/components/Lane/LaneMenu.tsx", "src/components/Selection/BulkMenu.ts"],
+      "commits": ["f73c286"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "In 2.2.0. User verified in Obsidian."
+    }
+  ]
+}
