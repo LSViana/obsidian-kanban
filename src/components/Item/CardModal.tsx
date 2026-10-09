@@ -156,7 +156,12 @@ class CardModal extends Modal {
       return false;
     });
     this.handleClose = handleClose;
-    this.containerEl.addClass(c('card-modal-container'), c(`card-modal-${layout}`));
+    // Stays transparent until the card editor is ready, so the pop-up never shows up empty.
+    this.containerEl.addClass(
+      c('card-modal-container'),
+      c(`card-modal-${layout}`),
+      c('card-modal-preparing')
+    );
     this.modalEl.addClass(c('card-modal'));
   }
 
@@ -352,10 +357,21 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
   }, [modal]);
 
   useEffect(() => {
+    if (!modal) return;
+
+    // MarkdownEditor creates the editor in its own effect, which runs right before this one.
     const cm = editorRef.current;
-    if (!modal || !cm) return;
-    cm.focus();
-    cm.dispatch({ selection: EditorSelection.cursor(cm.state.doc.length) });
+    if (cm) {
+      cm.focus();
+      cm.dispatch({ selection: EditorSelection.cursor(cm.state.doc.length) });
+    }
+
+    // Reveal on the next frame, after the editor has drawn and measured its content.
+    const win = view.getWindow();
+    const frame = win.requestAnimationFrame(() => {
+      modal.containerEl.removeClass(c('card-modal-preparing'));
+    });
+    return () => win.cancelAnimationFrame(frame);
   }, [modal]);
 
   // Other plugins (like Iconic) decorate editor tags while CodeMirror processes an update,

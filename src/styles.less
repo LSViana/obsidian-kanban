@@ -1826,6 +1826,12 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   align-items: flex-start;
 }
 
+// Set while the card editor is being created, so the first frame is never empty.
+.kanban-plugin__card-modal-container.kanban-plugin__card-modal-preparing {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .kanban-plugin__card-modal-container .modal.kanban-plugin__card-modal {
   width: min(720px, 90vw);
   max-width: none;
