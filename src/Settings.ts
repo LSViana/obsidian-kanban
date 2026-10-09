@@ -447,7 +447,7 @@ export class SettingsManager {
       .setName(t('Show only the first line of cards'))
       .setDesc(
         t(
-          'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.'
+          'When toggled, cards with a blank line show only the lines above it on the board. Open the card to see the rest.'
         )
       )
       .then((setting) => {
@@ -699,7 +699,7 @@ export class SettingsManager {
       .setName(t('Move card body to new note'))
       .setDesc(
         t(
-          'When toggled, "New note from card" moves the text below the first line into the new note, if a blank line separates them. Parent links stay on the card.'
+          'When toggled, "New note from card" moves the text below the first blank line into the new note. The lines above it and parent links stay on the card.'
         )
       )
       .then((setting) => {

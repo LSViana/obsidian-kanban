@@ -234,11 +234,11 @@ const en = {
   'When toggled, clicking a card opens it in a pop-up. Double-click still edits the card in place.':
     'When toggled, clicking a card opens it in a pop-up. Double-click still edits the card in place.',
   'Show only the first line of cards': 'Show only the first line of cards',
-  'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.':
-    'When toggled, cards whose first line is followed by a blank line show only that line on the board. Open the card to see the rest.',
+  'When toggled, cards with a blank line show only the lines above it on the board. Open the card to see the rest.':
+    'When toggled, cards with a blank line show only the lines above it on the board. Open the card to see the rest.',
   'Move card body to new note': 'Move card body to new note',
-  'When toggled, "New note from card" moves the text below the first line into the new note, if a blank line separates them. Parent links stay on the card.':
-    'When toggled, "New note from card" moves the text below the first line into the new note, if a blank line separates them. Parent links stay on the card.',
+  'When toggled, "New note from card" moves the text below the first blank line into the new note. The lines above it and parent links stay on the card.':
+    'When toggled, "New note from card" moves the text below the first blank line into the new note. The lines above it and parent links stay on the card.',
   'Open linked note': 'Open linked note',
   'Search in card': 'Search in card',
   'This card no longer exists. Your text was copied to the clipboard.':

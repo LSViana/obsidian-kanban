@@ -44,7 +44,7 @@
     {
       "id": "feat-005",
       "name": "New note from card: move card body",
-      "description": "Setting 'move-card-body-to-note', default off. Text after first line (blank line separated) moves into new note after template; card keeps title link + parent:: lines. Shares splitFirstLine with feat-008.",
+      "description": "Setting 'move-card-body-to-note', default off. Text after first blank line moves into new note after template; card keeps title lines (line 1 becomes link) + parent:: lines. Shares splitFirstLine with feat-008.",
       "files": ["src/components/Item/ItemMenu.ts", "src/components/Item/helpers.ts", "src/Settings.ts"],
       "commits": ["bce21af"],
       "dependencies": ["feat-004", "feat-008"],
@@ -74,7 +74,7 @@
     {
       "id": "feat-008",
       "name": "Show only first line of cards",
-      "description": "Setting 'show-first-line-only', default off. Card with blank line after first line shows only that line plus faint ellipsis; rest in pop-up. Inline edit edits first line only. Table view unaffected; search hit in hidden text shows full card.",
+      "description": "Setting 'show-first-line-only', default off. Title = all lines before first blank line (whitespace-only counts blank). Card with blank line shows only title plus faint ellipsis; rest in pop-up. Inline edit edits title lines only. No blank line: full card. Table view unaffected; search hit in hidden text shows full card.",
       "files": ["src/components/Item/ItemContent.tsx", "src/components/Item/helpers.ts (splitFirstLine)", "src/Settings.ts", "src/styles.less"],
       "commits": ["b4dfb1d", "bce21af"],
       "dependencies": [],
