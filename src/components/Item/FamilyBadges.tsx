@@ -141,12 +141,46 @@ export function getFamilyIds(index: FamilyIndex, id: string) {
   return ids;
 }
 
-// The family above, plus the item's siblings (other children of the same parent)
-function getHighlightIds(index: FamilyIndex, id: string) {
-  const ids = getFamilyIds(index, id);
+// Which badges light up on hover. `parent` holds cards whose parent badge lights up,
+// `children` holds cards whose "n/m done" badge lights up.
+interface HighlightIds {
+  parent: Set<string>;
+  children: Set<string>;
+}
+
+// Hovering a parent badge: the card, its siblings, and the chain of ancestors
+function getAncestorHighlight(index: FamilyIndex, id: string): HighlightIds {
+  const parent = new Set<string>([id]);
+  const children = new Set<string>();
+
   const parentId = index.get(id)?.parentId;
-  if (parentId) index.get(parentId)?.childIds.forEach((siblingId) => ids.add(siblingId));
-  return ids;
+  if (parentId) index.get(parentId)?.childIds.forEach((siblingId) => parent.add(siblingId));
+
+  let current = parentId;
+  while (current && !children.has(current)) {
+    children.add(current);
+    parent.add(current);
+    current = index.get(current)?.parentId;
+  }
+
+  return { parent, children };
+}
+
+// Hovering an "n/m done" badge: the card and all its descendants
+function getDescendantHighlight(index: FamilyIndex, id: string): HighlightIds {
+  const parent = new Set<string>();
+  const children = new Set<string>([id]);
+
+  const stack = [...(index.get(id)?.childIds ?? [])];
+  while (stack.length) {
+    const childId = stack.pop();
+    if (parent.has(childId)) continue;
+    parent.add(childId);
+    children.add(childId);
+    stack.push(...(index.get(childId)?.childIds ?? []));
+  }
+
+  return { parent, children };
 }
 
 export function getPlainTitle(item: Item) {
@@ -173,12 +207,13 @@ function getBoardRoot(el: HTMLElement) {
   return el.closest(`.${baseClassName}`) as HTMLElement | null;
 }
 
-function setHighlight(el: HTMLElement, ids: Set<string> | null) {
+function setHighlight(el: HTMLElement, ids: HighlightIds | null) {
   const root = getBoardRoot(el);
   if (!root) return;
 
   root.querySelectorAll<HTMLElement>(`.${badgeClass}`).forEach((badge) => {
-    badge.toggleClass(highlightClass, !!ids?.has(badge.dataset.familyId));
+    const set = badge.dataset.familyRole === 'children' ? ids?.children : ids?.parent;
+    badge.toggleClass(highlightClass, !!set?.has(badge.dataset.familyId));
   });
 }
 
@@ -210,8 +245,10 @@ export function FamilyBadges({ item }: { item: Item }) {
   const childCount = node.childIds.length;
   if (!hasParent && !childCount) return null;
 
-  const onEnter = (e: MouseEvent) =>
-    setHighlight(e.currentTarget as HTMLElement, getHighlightIds(index, item.id));
+  const onEnterParent = (e: MouseEvent) =>
+    setHighlight(e.currentTarget as HTMLElement, getAncestorHighlight(index, item.id));
+  const onEnterChildren = (e: MouseEvent) =>
+    setHighlight(e.currentTarget as HTMLElement, getDescendantHighlight(index, item.id));
   const onLeave = (e: MouseEvent) => setHighlight(e.currentTarget as HTMLElement, null);
 
   const parent = node.parentId ? index.get(node.parentId) : null;
@@ -228,8 +265,9 @@ export function FamilyBadges({ item }: { item: Item }) {
             { 'is-missing': node.parentMissing, 'is-loop': node.inLoop },
           ])}
           data-family-id={item.id}
+          data-family-role="parent"
           aria-label={node.inLoop ? t('Parent cards form a loop') : parentTitle}
-          onMouseEnter={onEnter}
+          onMouseEnter={onEnterParent}
           onMouseLeave={onLeave}
           onClick={(e) => {
             if (!node.parentId) return;
@@ -249,7 +287,8 @@ export function FamilyBadges({ item }: { item: Item }) {
             { 'is-complete': doneCount === childCount },
           ])}
           data-family-id={item.id}
-          onMouseEnter={onEnter}
+          data-family-role="children"
+          onMouseEnter={onEnterChildren}
           onMouseLeave={onLeave}
           onClick={(e) => {
             e.stopPropagation();
