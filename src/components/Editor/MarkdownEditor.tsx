@@ -3,7 +3,7 @@ import { EditorSelection, Extension, Prec } from '@codemirror/state';
 import { EditorView, ViewUpdate, keymap, placeholder as placeholderExt } from '@codemirror/view';
 import classcat from 'classcat';
 import { EditorPosition, Editor as ObsidianEditor, Platform } from 'obsidian';
-import { MutableRefObject, useContext, useEffect, useRef } from 'preact/compat';
+import { MutableRefObject, useContext, useLayoutEffect, useRef } from 'preact/compat';
 import { KanbanView } from 'src/KanbanView';
 import { StateManager } from 'src/StateManager';
 import { t } from 'src/lang/helpers';
@@ -115,7 +115,9 @@ export function MarkdownEditor({
   const elRef = useRef<HTMLDivElement>();
   const internalRef = useRef<EditorView>();
 
-  useEffect(() => {
+  // Layout effect so the editor exists before the browser paints. With a normal effect, the
+  // first frame shows an empty editor and the card or form briefly collapses.
+  useLayoutEffect(() => {
     class Editor extends view.plugin.MarkdownEditor {
       isKanbanEditor = true;
 
