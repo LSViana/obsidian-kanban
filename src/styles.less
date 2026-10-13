@@ -1131,19 +1131,6 @@ button.kanban-plugin__item-postfix-button.is-enabled,
   margin-block-end: 10px;
 }
 
-.kanban-plugin__action-confirm-wrapper {
-  border: 1px solid rgba(var(--background-modifier-error-rgb), 0.2);
-  background-color: rgba(var(--background-modifier-error-rgb), 0.1);
-  border-radius: 4px;
-  padding: 10px;
-  margin-block: 5px;
-  margin-inline: 10px;
-}
-
-.theme-dark .kanban-plugin__action-confirm-wrapper {
-  border: 1px solid rgba(var(--background-modifier-error-rgb), 1);
-}
-
 .kanban-plugin__delete-lane-button,
 .kanban-plugin__archive-lane-button {
   display: flex;
@@ -1172,37 +1159,6 @@ button.kanban-plugin__item-postfix-button.is-enabled,
 .theme-dark .kanban-plugin__delete-lane-button:hover {
   background-color: rgba(var(--background-modifier-error-rgb), 1);
   color: var(--text-error);
-}
-
-.kanban-plugin__action-confirm-text {
-  font-size: 0.875rem;
-  color: var(--text-error);
-  margin-block-end: 10px;
-  line-height: var(--line-height-tight);
-}
-
-.kanban-plugin__action-confirm-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-
-  button {
-    flex: 1 1 auto;
-    margin: 0;
-  }
-}
-
-button.kanban-plugin__confirm-action-button {
-  border: 1px solid rgba(var(--background-modifier-error-rgb), 0.2);
-  color: var(--text-error);
-
-  &:hover {
-    background-color: rgba(var(--background-modifier-error-rgb), 0.5);
-  }
-}
-
-button.kanban-plugin__cancel-action-button {
-  border: 1px solid var(--background-modifier-border);
 }
 
 .modal.kanban-plugin__board-settings-modal {

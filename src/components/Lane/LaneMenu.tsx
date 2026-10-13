@@ -1,17 +1,18 @@
 import update from 'immutability-helper';
 import { Menu, Platform } from 'obsidian';
-import { Dispatch, StateUpdater, useContext, useEffect, useMemo, useState } from 'preact/hooks';
+import { Dispatch, StateUpdater, useContext, useMemo } from 'preact/hooks';
 import { Path } from 'src/dnd/types';
 import { defaultSort } from 'src/helpers/util';
 import { t } from 'src/lang/helpers';
 import { lableToName } from 'src/parsers/helpers/inlineMetadata';
 
 import { anyToString } from '../Item/MetadataTable';
+import { ConfirmModal } from '../Selection/BulkMenu';
 import { KanbanContext } from '../context';
-import { c, generateInstanceId } from '../helpers';
+import { generateInstanceId } from '../helpers';
 import { EditState, Lane, LaneSort, LaneTemplate } from '../types';
 
-export type LaneAction = 'delete' | 'archive' | 'archive-items' | null;
+export type LaneAction = 'delete' | 'archive' | 'archive-items';
 
 const actionLabels = {
   delete: {
@@ -28,38 +29,6 @@ const actionLabels = {
   },
 };
 
-export interface ConfirmActionProps {
-  lane: Lane;
-  action: LaneAction;
-  cancel: () => void;
-  onAction: () => void;
-}
-
-export function ConfirmAction({ action, cancel, onAction, lane }: ConfirmActionProps) {
-  useEffect(() => {
-    // Immediately execute action if lane is empty
-    if (action && lane.children.length === 0) {
-      onAction();
-    }
-  }, [action, lane.children.length]);
-
-  if (!action || (action && lane.children.length === 0)) return null;
-
-  return (
-    <div className={c('action-confirm-wrapper')}>
-      <div className={c('action-confirm-text')}>{actionLabels[action].description}</div>
-      <div className={c('action-confirm-buttons')}>
-        <button onClick={onAction} className={c('confirm-action-button')}>
-          {actionLabels[action].confirm}
-        </button>
-        <button onClick={cancel} className={c('cancel-action-button')}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export interface UseSettingsMenuParams {
   setEditState: Dispatch<StateUpdater<EditState>>;
   path: Path;
@@ -68,9 +37,37 @@ export interface UseSettingsMenuParams {
 
 export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuParams) {
   const { stateManager, boardModifiers } = useContext(KanbanContext);
-  const [confirmAction, setConfirmAction] = useState<LaneAction>(null);
 
   const settingsMenu = useMemo(() => {
+    // Runs right away on an empty list, otherwise asks in a centered modal first
+    const runLaneAction = (action: LaneAction) => {
+      const run = () => {
+        switch (action) {
+          case 'archive':
+            boardModifiers.archiveLane(path);
+            break;
+          case 'archive-items':
+            boardModifiers.archiveLaneItems(path);
+            break;
+          case 'delete':
+            boardModifiers.deleteEntity(path);
+            break;
+        }
+      };
+
+      if (!lane.children.length) {
+        run();
+        return;
+      }
+
+      new ConfirmModal(
+        stateManager.app,
+        actionLabels[action].description,
+        actionLabels[action].confirm,
+        run
+      ).open();
+    };
+
     const metadataSortOptions = new Set<string>();
     let canSortDate = false;
     let canSortTags = false;
@@ -99,7 +96,7 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
         item
           .setIcon('lucide-archive')
           .setTitle(t('Archive cards'))
-          .onClick(() => setConfirmAction('archive-items'));
+          .onClick(() => runLaneAction('archive-items'));
       })
       .addSeparator()
       .addItem((i) => {
@@ -143,14 +140,14 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
         item
           .setIcon('lucide-archive')
           .setTitle(t('Archive list'))
-          .onClick(() => setConfirmAction('archive'));
+          .onClick(() => runLaneAction('archive'));
       })
       .addItem((item) => {
         item
           .setIcon('lucide-trash-2')
           .setTitle(t('Delete list'))
           .setWarning(true)
-          .onClick(() => setConfirmAction('delete'));
+          .onClick(() => runLaneAction('delete'));
       })
       .addSeparator();
 
@@ -340,11 +337,9 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
     }
 
     return menu;
-  }, [stateManager, setConfirmAction, path, lane]);
+  }, [stateManager, boardModifiers, path, lane]);
 
   return {
     settingsMenu,
-    confirmAction,
-    setConfirmAction,
   };
 }

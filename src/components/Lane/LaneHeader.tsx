@@ -12,7 +12,7 @@ import { Icon } from '../Icon/Icon';
 import { KanbanContext } from '../context';
 import { c } from '../helpers';
 import { EditState, EditingState, Lane, isEditing } from '../types';
-import { ConfirmAction, useSettingsMenu } from './LaneMenu';
+import { useSettingsMenu } from './LaneMenu';
 import { LaneSettings } from './LaneSettings';
 import { LaneLimitCounter, LaneTitle } from './LaneTitle';
 
@@ -92,7 +92,7 @@ export const LaneHeader = memo(function LaneHeader({
   const lanePath = useNestedEntityPath(laneIndex);
 
   const { boardModifiers } = useContext(KanbanContext);
-  const { settingsMenu, confirmAction, setConfirmAction } = useSettingsMenu({
+  const { settingsMenu } = useSettingsMenu({
     setEditState,
     path: lanePath,
     lane,
@@ -166,29 +166,6 @@ export const LaneHeader = memo(function LaneHeader({
       </div>
 
       <LaneSettings editState={editState} lane={lane} lanePath={lanePath} />
-
-      {confirmAction && (
-        <ConfirmAction
-          lane={lane}
-          action={confirmAction}
-          onAction={() => {
-            switch (confirmAction) {
-              case 'archive':
-                boardModifiers.archiveLane(lanePath);
-                break;
-              case 'archive-items':
-                boardModifiers.archiveLaneItems(lanePath);
-                break;
-              case 'delete':
-                boardModifiers.deleteEntity(lanePath);
-                break;
-            }
-
-            setConfirmAction(null);
-          }}
-          cancel={() => setConfirmAction(null)}
-        />
-      )}
     </>
   );
 });

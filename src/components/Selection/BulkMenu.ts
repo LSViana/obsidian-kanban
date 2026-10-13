@@ -6,7 +6,7 @@ import { BoardModifiers } from '../../helpers/boardModifiers';
 import { c, generateInstanceId } from '../helpers';
 import { SelectionManager, resolveSelection } from './SelectionManager';
 
-class ConfirmModal extends Modal {
+export class ConfirmModal extends Modal {
   constructor(
     app: App,
     private message: string,
