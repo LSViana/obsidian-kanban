@@ -162,7 +162,7 @@ export function getBoardModifiers(view: KanbanView, stateManager: StateManager):
             data: {
               settings: { 'list-collapse': { $set: op(collapseState) } },
               archive: {
-                $unshift: stateManager.getSetting('archive-with-date')
+                $push: stateManager.getSetting('archive-with-date')
                   ? items.map(appendArchiveDate)
                   : items,
               },
@@ -190,7 +190,7 @@ export function getBoardModifiers(view: KanbanView, stateManager: StateManager):
             {
               data: {
                 archive: {
-                  $unshift: stateManager.getSetting('archive-with-date')
+                  $push: stateManager.getSetting('archive-with-date')
                     ? items.map(appendArchiveDate)
                     : items,
                 },
