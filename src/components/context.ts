@@ -27,6 +27,8 @@ export const SearchContext = createContext<SearchContextProps | null>(null);
 // Card selection for the board view. Null in views without selection (table).
 export const SelectionContext = createContext<SelectionManager | null>(null);
 export const SortContext = createContext<LaneSort | string | null>(null);
+// True inside the Archived column, where card edits go to the board's archive
+export const ArchivedItemContext = createContext<boolean>(false);
 export const IntersectionObserverContext = createContext<{
   registerHandler: (el: HTMLElement, handler: IntersectionObserverHandler) => void;
   unregisterHandler: (el: HTMLElement) => void;

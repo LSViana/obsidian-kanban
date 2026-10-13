@@ -15,6 +15,7 @@ import { t } from 'src/lang/helpers';
 import { DndScope } from '../dnd/components/Scope';
 import { getBoardModifiers } from '../helpers/boardModifiers';
 import { frontmatterKey } from '../parsers/common';
+import { ArchiveColumn } from './Archive/ArchiveColumn';
 import { Icon } from './Icon/Icon';
 import { Lanes } from './Lane/Lane';
 import { LaneForm } from './Lane/LaneForm';
@@ -73,6 +74,8 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
   const maxArchiveLength = stateManager.useSetting('max-archive-size');
   const dateColors = stateManager.useSetting('date-colors');
   const tagColors = stateManager.useSetting('tag-colors');
+  // Read from the board itself: setting hooks can miss values saved before the view loaded
+  const showArchivedColumn = !!boardData?.data.settings['show-archived-column'];
   const boardView = view.useViewState(frontmatterKey);
 
   const closeLaneForm = useCallback(() => {
@@ -340,6 +343,7 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
                         index={boardData.children.length}
                       />
                     </Sortable>
+                    {showArchivedColumn && <ArchiveColumn />}
                   </div>
                 </ScrollContainer>
               )}

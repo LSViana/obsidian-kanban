@@ -81,6 +81,8 @@ export interface KanbanSettings {
   'new-note-open-in'?: NewNoteOpenIn;
   'show-add-list'?: boolean;
   'show-archive-all'?: boolean;
+  'show-archived-button'?: boolean;
+  'show-archived-column'?: boolean;
   'show-board-settings'?: boolean;
   'show-checkboxes'?: boolean;
   'show-relative-date'?: boolean;
@@ -140,6 +142,8 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'new-note-open-in',
   'show-add-list',
   'show-archive-all',
+  'show-archived-button',
+  'show-archived-column',
   'show-board-settings',
   'show-checkboxes',
   'show-relative-date',
@@ -1635,6 +1639,48 @@ export class SettingsManager {
 
               this.applySettingsUpdate({
                 $unset: ['show-archive-all'],
+              });
+            });
+        });
+    });
+
+    new Setting(contentEl).setName(t('Show archived cards')).then((setting) => {
+      let toggleComponent: ToggleComponent;
+
+      setting
+        .addToggle((toggle) => {
+          toggleComponent = toggle;
+
+          const [value, globalValue] = this.getSetting('show-archived-button', local);
+
+          if (value !== undefined && value !== null) {
+            toggle.setValue(value as boolean);
+          } else if (globalValue !== undefined && globalValue !== null) {
+            toggle.setValue(globalValue as boolean);
+          } else {
+            // default
+            toggle.setValue(true);
+          }
+
+          toggle.onChange((newValue) => {
+            this.applySettingsUpdate({
+              'show-archived-button': {
+                $set: newValue,
+              },
+            });
+          });
+        })
+        .addExtraButton((b) => {
+          b.setIcon('lucide-rotate-ccw')
+            .setTooltip(t('Reset to default'))
+            .onClick(() => {
+              const [, globalValue] = this.getSetting('show-archived-button', local);
+              toggleComponent.setValue(
+                globalValue !== undefined && globalValue !== null ? !!globalValue : true
+              );
+
+              this.applySettingsUpdate({
+                $unset: ['show-archived-button'],
               });
             });
         });

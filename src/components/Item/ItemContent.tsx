@@ -22,7 +22,7 @@ import {
   MarkdownClonedPreviewRenderer,
   MarkdownRenderer,
 } from '../MarkdownRenderer/MarkdownRenderer';
-import { KanbanContext, SearchContext } from '../context';
+import { ArchivedItemContext, KanbanContext, SearchContext } from '../context';
 import { c, useGetDateColorFn, useGetTagColorFn } from '../helpers';
 import { EditState, EditingState, Item, isEditing } from '../types';
 import { DateAndTime, RelativeDate } from './DateAndTime';
@@ -267,6 +267,7 @@ export const ItemContent = memo(function ItemContent({
   firstLineOnly = false,
 }: ItemContentProps) {
   const { stateManager, filePath, boardModifiers } = useContext(KanbanContext);
+  const isArchived = useContext(ArchivedItemContext);
   const getDateColor = useGetDateColorFn(stateManager);
   const titleRef = useRef<string | null>(null);
 
@@ -277,7 +278,9 @@ export const ItemContent = memo(function ItemContent({
     !!searchQuery && displayParts.rest.toLocaleLowerCase().includes(searchQuery);
   const hideRest = firstLineOnly && !!displayParts.rest && !hiddenLinesMatchSearch;
   const displayMarkdown = hideRest ? displayParts.first : item.data.title;
-  const markdownClassName = hideRest ? `${c('item-markdown')} has-hidden-lines` : c('item-markdown');
+  const markdownClassName = hideRest
+    ? `${c('item-markdown')} has-hidden-lines`
+    : c('item-markdown');
 
   // A child card just added from the menu. It opens with two blank lines above the
   // parent field so the user can type right away, and is removed if left empty.
@@ -301,7 +304,9 @@ export const ItemContent = memo(function ItemContent({
         if (editFirstLineOnly) {
           nextTitle = nextTitle ? `${nextTitle}\n${rawParts.rest}` : rawParts.rest;
         }
-        boardModifiers.updateItem(path, stateManager.updateItemContent(item, nextTitle));
+        const updated = stateManager.updateItemContent(item, nextTitle);
+        if (isArchived) boardModifiers.updateArchivedItem(item.id, updated);
+        else boardModifiers.updateItem(path, updated);
       }
       titleRef.current = null;
     } else if (editState === EditingState.cancel) {
@@ -324,6 +329,8 @@ export const ItemContent = memo(function ItemContent({
 
   const onWrapperClick = useCallback(
     (e: MouseEvent) => {
+      // Date pickers edit cards in lists only
+      if (isArchived) return;
       if (e.targetNode.instanceOf(HTMLElement)) {
         if (e.targetNode.hasClass(c('item-metadata-date'))) {
           onEditDate(e);
@@ -355,10 +362,11 @@ export const ItemContent = memo(function ItemContent({
         const checked = checkCheckbox(stateManager, item.data.titleRaw, checkboxIndex);
         const updated = stateManager.updateItemContent(item, checked);
 
-        boardModifiers.updateItem(path, updated);
+        if (isArchived) boardModifiers.updateArchivedItem(item.id, updated);
+        else boardModifiers.updateItem(path, updated);
       }
     },
-    [path, boardModifiers, stateManager, item]
+    [path, boardModifiers, stateManager, item, isArchived]
   );
 
   if (!isStatic && isEditing(editState)) {

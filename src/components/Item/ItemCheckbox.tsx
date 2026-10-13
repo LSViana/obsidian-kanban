@@ -1,11 +1,12 @@
 import update from 'immutability-helper';
-import { memo, useCallback, useEffect, useState } from 'preact/compat';
+import { memo, useCallback, useContext, useEffect, useState } from 'preact/compat';
 import { StateManager } from 'src/StateManager';
 import { Path } from 'src/dnd/types';
 import { getTaskStatusDone, toggleTask } from 'src/parsers/helpers/inlineMetadata';
 
 import { BoardModifiers } from '../../helpers/boardModifiers';
 import { Icon } from '../Icon/Icon';
+import { ArchivedItemContext } from '../context';
 import { c } from '../helpers';
 import { Item } from '../types';
 
@@ -25,11 +26,29 @@ export const ItemCheckbox = memo(function ItemCheckbox({
   boardModifiers,
 }: ItemCheckboxProps) {
   const shouldShowCheckbox = stateManager.useSetting('show-checkboxes');
+  const isArchived = useContext(ArchivedItemContext);
 
   const [isCtrlHoveringCheckbox, setIsCtrlHoveringCheckbox] = useState(false);
   const [isHoveringCheckbox, setIsHoveringCheckbox] = useState(false);
 
   const onCheckboxChange = useCallback(() => {
+    const toggled = update(item, {
+      data: {
+        checkChar: {
+          $apply: (v) => {
+            return v === ' ' ? getTaskStatusDone() : ' ';
+          },
+        },
+        $toggle: ['checked'],
+      },
+    });
+
+    // Archived cards only flip their checkbox; recurring tasks are not created from them
+    if (isArchived) {
+      boardModifiers.updateArchivedItem(item.id, toggled);
+      return;
+    }
+
     const updates = toggleTask(item, stateManager.file);
     if (updates) {
       const [itemStrings, checkChars, thisIndex] = updates;
@@ -41,21 +60,9 @@ export const ItemCheckbox = memo(function ItemCheckbox({
 
       boardModifiers.replaceItem(path, replacements);
     } else {
-      boardModifiers.updateItem(
-        path,
-        update(item, {
-          data: {
-            checkChar: {
-              $apply: (v) => {
-                return v === ' ' ? getTaskStatusDone() : ' ';
-              },
-            },
-            $toggle: ['checked'],
-          },
-        })
-      );
+      boardModifiers.updateItem(path, toggled);
     }
-  }, [item, stateManager, boardModifiers, ...path]);
+  }, [item, stateManager, boardModifiers, isArchived, ...path]);
 
   useEffect(() => {
     if (isHoveringCheckbox) {
@@ -99,7 +106,7 @@ export const ItemCheckbox = memo(function ItemCheckbox({
       }}
       className={c('item-prefix-button-wrapper')}
     >
-      {shouldShowCheckbox && !isCtrlHoveringCheckbox && (
+      {shouldShowCheckbox && (!isCtrlHoveringCheckbox || isArchived) && (
         <input
           onChange={onCheckboxChange}
           type="checkbox"
@@ -108,17 +115,18 @@ export const ItemCheckbox = memo(function ItemCheckbox({
           data-task={item.data.checkChar}
         />
       )}
-      {(isCtrlHoveringCheckbox || (!shouldShowCheckbox && shouldMarkItemsComplete)) && (
-        <a
-          onClick={() => {
-            boardModifiers.archiveItem(path);
-          }}
-          className={`${c('item-prefix-button')} clickable-icon`}
-          aria-label={isCtrlHoveringCheckbox ? undefined : 'Archive card'}
-        >
-          <Icon name="sheets-in-box" />
-        </a>
-      )}
+      {!isArchived &&
+        (isCtrlHoveringCheckbox || (!shouldShowCheckbox && shouldMarkItemsComplete)) && (
+          <a
+            onClick={() => {
+              boardModifiers.archiveItem(path);
+            }}
+            className={`${c('item-prefix-button')} clickable-icon`}
+            aria-label={isCtrlHoveringCheckbox ? undefined : 'Archive card'}
+          >
+            <Icon name="sheets-in-box" />
+          </a>
+        )}
     </div>
   );
 });

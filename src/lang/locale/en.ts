@@ -333,6 +333,17 @@ const en = {
   'Confirm action': 'Confirm action',
   Actions: 'Actions',
   'Clear selection': 'Clear selection',
+  'Show archived cards': 'Show archived cards',
+  'Hide archived cards': 'Hide archived cards',
+  'No archived cards': 'No archived cards',
+  'Unarchive card': 'Unarchive card',
+  'Unarchive cards': 'Unarchive cards',
+  Unarchive: 'Unarchive',
+  'Unarchive all archived cards?': 'Unarchive all archived cards?',
+  'Cards are sorted by archive date (newest first).':
+    'Cards are sorted by archive date (newest first).',
+  'Delete the selected archived cards? This cannot be undone.':
+    'Delete the selected archived cards? This cannot be undone.',
 };
 
 export type Lang = typeof en;

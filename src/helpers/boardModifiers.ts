@@ -42,6 +42,45 @@ export interface BoardModifiers {
   deleteItems: (ids: Set<string>) => void;
   setItemsDone: (ids: Set<string>, done: boolean) => void;
   setItemsBlockIds: (blockIds: Map<string, string>) => void;
+  // Actions on archived cards, found by id
+  restoreArchivedItems: (ids: Set<string>, laneIndex: number) => void;
+  deleteArchivedItems: (ids: Set<string>) => void;
+  updateArchivedItem: (id: string, item: Item) => void;
+}
+
+// Removes the date that archiving added to a title. Returns the title unchanged when
+// no date written in the current archive date format is found where archiving puts it.
+export function stripArchiveDate(stateManager: StateManager, titleRaw: string) {
+  const format = stateManager.getSetting('archive-date-format');
+  const separator = stateManager.getSetting('archive-date-separator');
+  const dateAfterTitle = stateManager.getSetting('append-archive-date');
+  if (!format) return titleRaw;
+
+  const isDate = (str: string) => moment(str, format, true).isValid();
+
+  if (dateAfterTitle) {
+    for (let i = titleRaw.lastIndexOf(' '); i > 0; i = titleRaw.lastIndexOf(' ', i - 1)) {
+      if (!isDate(titleRaw.slice(i + 1))) continue;
+      let rest = titleRaw.slice(0, i);
+      if (separator) {
+        if (!rest.endsWith(' ' + separator)) continue;
+        rest = rest.slice(0, -(separator.length + 1));
+      }
+      return rest;
+    }
+  } else {
+    for (let i = titleRaw.indexOf(' '); i > 0; i = titleRaw.indexOf(' ', i + 1)) {
+      if (!isDate(titleRaw.slice(0, i))) continue;
+      let rest = titleRaw.slice(i + 1);
+      if (separator) {
+        if (!rest.startsWith(separator + ' ')) continue;
+        rest = rest.slice(separator.length + 1);
+      }
+      return rest;
+    }
+  }
+
+  return titleRaw;
 }
 
 export function getBoardModifiers(view: KanbanView, stateManager: StateManager): BoardModifiers {
@@ -420,6 +459,67 @@ export function getBoardModifiers(view: KanbanView, stateManager: StateManager):
         });
 
         return board;
+      });
+    },
+
+    // Restores archived cards to the end of a list, in their archive order (oldest first)
+    restoreArchivedItems: (ids: Set<string>, laneIndex: number) => {
+      stateManager.setState((boardData) => {
+        const lane = boardData.children[laneIndex];
+        const toRestore = boardData.data.archive.filter((item) => ids.has(item.id));
+        if (!lane || !toRestore.length) return boardData;
+
+        try {
+          const markComplete = !!lane.data.shouldMarkItemsComplete;
+          const restored = toRestore.map((item) => {
+            const next = stateManager.updateItemContent(
+              item,
+              stripArchiveDate(stateManager, item.data.titleRaw)
+            );
+            if (!markComplete) return next;
+            return update(next, {
+              data: {
+                checked: { $set: true },
+                checkChar: { $set: getTaskStatusDone() },
+              },
+            });
+          });
+
+          let board = update(boardData, {
+            data: {
+              archive: { $set: boardData.data.archive.filter((item) => !ids.has(item.id)) },
+            },
+          });
+          // These helpers take a child path; the last index is ignored
+          board = appendEntities(board, [laneIndex, 0], restored) as Board;
+
+          if (board.children[laneIndex].data.sorted !== undefined) {
+            board = updateEntity(board, [laneIndex], { data: { $unset: ['sorted'] } }) as Board;
+          }
+
+          return board;
+        } catch (e) {
+          stateManager.setError(e);
+          return boardData;
+        }
+      });
+    },
+
+    deleteArchivedItems: (ids: Set<string>) => {
+      stateManager.setState((boardData) =>
+        update(boardData, {
+          data: {
+            archive: { $set: boardData.data.archive.filter((item) => !ids.has(item.id)) },
+          },
+        })
+      );
+    },
+
+    updateArchivedItem: (id: string, item: Item) => {
+      stateManager.setState((boardData) => {
+        const index = boardData.data.archive.findIndex((archived) => archived.id === id);
+        if (index === -1) return boardData;
+        return update(boardData, { data: { archive: { [index]: { $set: item } } } });
       });
     },
   };

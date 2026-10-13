@@ -593,6 +593,34 @@ button.kanban-plugin__lane-settings-button + button.kanban-plugin__lane-settings
   }
 }
 
+.kanban-plugin__archive-lane {
+  max-height: 100%;
+
+  .kanban-plugin__lane-header-wrapper {
+    color: var(--text-muted);
+  }
+}
+
+.kanban-plugin__archive-lane-items {
+  overflow-y: auto;
+  padding-block-end: 8px;
+}
+
+.kanban-plugin__archived-item .kanban-plugin__item-content-wrapper {
+  cursor: pointer;
+}
+
+.kanban-plugin__archive-lane-empty {
+  color: var(--text-faint);
+  font-size: 0.875rem;
+  padding: 8px;
+  text-align: center;
+}
+
+.kanban-plugin__archive-lane-sentinel {
+  min-height: 1px;
+}
+
 .kanban-plugin__lane-items > .kanban-plugin__placeholder {
   flex-grow: 1;
   &:only-child {
@@ -2271,6 +2299,12 @@ body:has(.kanban-plugin__card-modal-container) {
 
 .menu-item.kanban-plugin__menu-note-footer {
   margin-top: var(--size-4-2);
+}
+
+.menu-item.kanban-plugin__menu-note-secondary .menu-item-title {
+  font-size: var(--font-ui-smaller);
+  font-style: italic;
+  color: var(--text-faint);
 }
 
 // Dragging several selected cards: the dragged card looks like a stack with a count badge,

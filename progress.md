@@ -19,7 +19,9 @@ Shared cross-session notes: open gaps + decisions. No per-session state here (th
 ## Decisions
 
 - Card edit on outside click saves (not discards), like Enter.
-- New settings default off, global + per board.
+- New settings default off, global + per board. Exception: `show-archived-button` default on (user choice, like other header buttons).
 - Release notes hand-written, user-facing, grouped by area.
 - No GitHub releases: Actions disabled on fork. Tag push only.
 - Drag and drop: drop target updates during auto-scroll too. Empty space below list end (same column, 200px reach) counts as list end (feat-014).
+- Archive order: oldest first in file, every archive action appends (feat-016). Archived column reverses it (feat-015). No per-card archive timestamp; "newest first" = archive order.
+- Archived cards: date pickers on card chips disabled (they edit by list path). Recurring tasks not spawned when checking archived card.

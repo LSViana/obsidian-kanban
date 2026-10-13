@@ -140,6 +140,26 @@
       "dependencies": [],
       "status": "done",
       "evidence": "Root cause from user repro logs (6/15 drags lost target: frozen during auto-scroll, then card below 1-card end slot). Build OK, typecheck 41. User verified in Obsidian."
+    },
+    {
+      "id": "feat-015",
+      "name": "Archived column",
+      "description": "Header button (lucide-archive-restore) + board '...' menu toggle virtual 'Archived' column after lists. Newest archived first, 20 cards per page, more on scroll (IntersectionObserver). Shown state saved per board: 'show-archived-column'. Button hidden via 'show-archived-button' (default on). Cards reuse ItemInner: click, double-click edit, pop-up, checkbox, selection (box + Ctrl/Cmd), no drag. Selection holds archived or list cards, never both. Card menu: Unarchive to list (bottom, archive order, archive date stripped if matches format), Edit, Open, Delete. Column '...' menu: Hide, Unarchive cards (selected, else all with confirm), sort note.",
+      "files": ["src/components/Archive/ArchiveColumn.tsx", "src/components/Archive/ArchiveMenu.ts", "src/components/Kanban.tsx", "src/KanbanView.tsx", "src/helpers/boardModifiers.ts (restoreArchivedItems, deleteArchivedItems, updateArchivedItem, stripArchiveDate)", "src/components/Item/Item.tsx", "src/components/Item/ItemContent.tsx", "src/components/Item/ItemCheckbox.tsx", "src/components/Item/CardModal.tsx", "src/components/Selection/SelectionManager.ts", "src/components/Selection/SelectionBar.tsx", "src/components/Selection/BulkMenu.ts", "src/components/context.ts (ArchivedItemContext)", "src/Settings.ts", "src/StateManager.ts", "src/lang/locale/en.ts", "src/styles.less"],
+      "commits": [],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "Build OK, typecheck 41. User verified in Obsidian (2 rounds)."
+    },
+    {
+      "id": "feat-016",
+      "name": "Archive list keeps card order",
+      "description": "Fix: 'Archive cards' and 'Archive list' prepended cards to archive, so max-archive-size trimmed them first. Now appended at end in lane order, like other archive actions.",
+      "files": ["src/helpers/boardModifiers.ts (archiveLane, archiveLaneItems)"],
+      "commits": ["d730be1"],
+      "dependencies": [],
+      "status": "done",
+      "evidence": "User verified in Obsidian."
     }
   ]
 }

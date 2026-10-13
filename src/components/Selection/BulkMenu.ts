@@ -39,7 +39,7 @@ class ConfirmModal extends Modal {
   }
 }
 
-function confirmIfMany(
+export function confirmIfMany(
   app: App,
   count: number,
   message: string,
@@ -63,7 +63,19 @@ interface BulkMenuParams {
 export function deleteSelectedCards({ stateManager, boardModifiers, selection }: BulkMenuParams) {
   const ids = selection.getIds();
   const count = resolveSelection(stateManager.state, ids).length;
-  if (!count) return;
+  if (!count) {
+    // The selection may hold archived cards instead
+    const archivedCount = stateManager.state.data.archive.filter((item) => ids.has(item.id)).length;
+    if (!archivedCount) return;
+    confirmIfMany(
+      stateManager.app,
+      archivedCount,
+      t('Delete the selected archived cards? This cannot be undone.'),
+      `${t('Delete')} ${archivedCount}`,
+      () => boardModifiers.deleteArchivedItems(ids)
+    );
+    return;
+  }
 
   confirmIfMany(
     stateManager.app,

@@ -312,13 +312,14 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
     // Look the card up by id, since its position may have changed while the modal was open.
     const currentBoard = stateManager.state;
     const path = findItemPath(currentBoard, item.id);
-    if (!path) {
+    const archived = path ? undefined : currentBoard.data.archive.find((a) => a.id === item.id);
+    if (!path && !archived) {
       navigator.clipboard?.writeText(text);
       new Notice(t('This card no longer exists. Your text was copied to the clipboard.'));
       return;
     }
 
-    const current = currentBoard.children[path[0]].children[path[1]];
+    const current = path ? currentBoard.children[path[0]].children[path[1]] : archived;
     if (current.data.titleRaw !== lastSavedRef.current) {
       new Notice(
         t('This card was changed somewhere else while it was open. Your version was saved.')
@@ -327,7 +328,8 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
 
     const updated = stateManager.updateItemContent(current, text);
     lastSavedRef.current = updated.data.titleRaw;
-    boardModifiers.updateItem(path, updated);
+    if (path) boardModifiers.updateItem(path, updated);
+    else boardModifiers.updateArchivedItem(item.id, updated);
   }, [view, stateManager, boardModifiers, item.id]);
 
   const saveRef = useRef(save);
@@ -434,7 +436,11 @@ export function CardModalPortal({ item, onClose, layout = 'center' }: CardModalP
   if (!modal) return null;
 
   const path = findItemPath(board, item.id);
-  const laneTitle = path ? board.children[path[0]].data.title : '';
+  const laneTitle = path
+    ? board.children[path[0]].data.title
+    : board.data.archive.some((a) => a.id === item.id)
+      ? t('Archived')
+      : '';
 
   return createPortal(
     <div className={c('card-modal-content')}>

@@ -21,7 +21,7 @@ Worktrees: only main checkout folder is live plugin in dev vault. Worktree build
 
 - `src/main.ts` plugin entry. `src/KanbanView.tsx` view. `src/StateManager.ts` board state + settings resolution.
 - `src/Settings.ts` global + per-board settings UI. Keys and defaults live here. Labels in `src/lang/locale/en.ts`.
-- `src/components/` Preact UI: `Kanban.tsx` board, `Lane/`, `Item/` (cards), `Selection/` (multi-select), `Table/`, `Editor/`.
+- `src/components/` Preact UI: `Kanban.tsx` board, `Lane/`, `Item/` (cards), `Selection/` (multi-select), `Archive/` (Archived column + menus), `Table/`, `Editor/`.
 - `src/helpers/boardModifiers.ts` board mutations. `src/parsers/` markdown parse/serialize (`formats/list.ts`, `extensions/tag.ts`).
 - `src/DragDropApp.tsx` + `src/dnd/` drag and drop.
 - `src/styles.less` all CSS. Fork blocks often near file end, one block per feature.

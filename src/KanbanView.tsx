@@ -107,6 +107,11 @@ export class KanbanView extends TextFileView implements HoverParent {
       });
     });
 
+    // Keep the previews of archived cards while the Archived column shows them
+    if (board.data.settings['show-archived-column']) {
+      board.data.archive.forEach((item) => seenKeys.add(item.id));
+    }
+
     for (const k of this.previewCache.keys()) {
       if (!seenKeys.has(k)) {
         this.removeChild(this.previewCache.get(k));
@@ -349,6 +354,15 @@ export class KanbanView extends TextFileView implements HoverParent {
             const stateManager = this.plugin.stateManagers.get(this.file);
             stateManager.archiveCompletedCards();
           });
+      })
+      .addItem((item) => {
+        const stateManager = this.plugin.stateManagers.get(this.file);
+        item
+          .setTitle(t('Show archived cards'))
+          .setIcon('lucide-archive-restore')
+          .setChecked(!!stateManager?.getSetting('show-archived-column'))
+          .setSection('pane')
+          .onClick(() => this.toggleArchivedColumn());
       });
 
     if (callSuper) {
@@ -357,6 +371,22 @@ export class KanbanView extends TextFileView implements HoverParent {
   }
 
   initHeaderButtons = debounce(() => this._initHeaderButtons(), 10, true);
+
+  // Shows or hides the Archived column. The choice is saved in the board settings.
+  toggleArchivedColumn() {
+    const stateManager = this.plugin.stateManagers.get(this.file);
+    if (!stateManager) return;
+    const isShown = !!stateManager.getSetting('show-archived-column');
+    stateManager.setState((board) =>
+      update(board, {
+        data: {
+          settings: isShown
+            ? { $unset: ['show-archived-column'] }
+            : { 'show-archived-column': { $set: true } },
+        },
+      })
+    );
+  }
 
   _initHeaderButtons = async () => {
     if (Platform.isPhone) return;
@@ -464,6 +494,25 @@ export class KanbanView extends TextFileView implements HoverParent {
       this.actionButtons['show-archive-all'].remove();
       delete this.actionButtons['show-archive-all'];
     }
+
+    if (stateManager.getSetting('show-archived-button') && !this.actionButtons['show-archived']) {
+      this.actionButtons['show-archived'] = this.addAction(
+        'lucide-archive-restore',
+        t('Show archived cards'),
+        () => this.toggleArchivedColumn()
+      );
+    } else if (
+      !stateManager.getSetting('show-archived-button') &&
+      this.actionButtons['show-archived']
+    ) {
+      this.actionButtons['show-archived'].remove();
+      delete this.actionButtons['show-archived'];
+    }
+
+    this.actionButtons['show-archived']?.toggleClass(
+      'is-active',
+      !!stateManager.getSetting('show-archived-column')
+    );
 
     if (stateManager.getSetting('show-add-list') && !this.actionButtons['show-add-list']) {
       const btn = this.addAction('lucide-plus-circle', t('Add a list'), () => {

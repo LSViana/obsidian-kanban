@@ -16,9 +16,16 @@ export class SelectionManager {
   private ids = new Set<string>();
   private itemListeners = new Map<string, Set<() => void>>();
   private listeners = new Set<() => void>();
+  // Ids of archived cards. A selection holds either archived cards or list cards, never both.
+  private archivedIds = new Set<string>();
 
   get size() {
     return this.ids.size;
+  }
+
+  // True when the selection holds archived cards
+  get isArchived() {
+    return this.ids.size > 0 && [...this.ids].every((id) => this.archivedIds.has(id));
   }
 
   has(id: string) {
@@ -30,7 +37,16 @@ export class SelectionManager {
   }
 
   set(ids: Iterable<string>) {
-    const next = new Set(ids);
+    let next = new Set(ids);
+
+    // Newly added cards decide which kind the selection keeps; the other kind is dropped
+    const added = [...next].filter((id) => !this.ids.has(id));
+    if (added.length) {
+      const archivedCount = added.filter((id) => this.archivedIds.has(id)).length;
+      const keepArchived = archivedCount * 2 > added.length;
+      next = new Set([...next].filter((id) => this.archivedIds.has(id) === keepArchived));
+    }
+
     const changed: string[] = [];
 
     this.ids.forEach((id) => {
@@ -58,12 +74,19 @@ export class SelectionManager {
     this.set([]);
   }
 
-  // Drops ids of cards that are no longer on the board
+  // Drops ids of cards that are no longer on the board. Archived cards stay selectable
+  // while the Archived column is shown.
   prune(board: Board | null) {
-    if (!this.ids.size || !board) return;
+    if (!board) return;
+
+    this.archivedIds = new Set(board.data.archive.map((item) => item.id));
+    if (!this.ids.size) return;
 
     const existing = new Set<string>();
     board.children.forEach((lane) => lane.children.forEach((item) => existing.add(item.id)));
+    if (board.data.settings['show-archived-column']) {
+      this.archivedIds.forEach((id) => existing.add(id));
+    }
 
     this.set([...this.ids].filter((id) => existing.has(id)));
   }

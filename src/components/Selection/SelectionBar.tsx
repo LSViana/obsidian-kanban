@@ -1,6 +1,7 @@
 import { useContext, useMemo } from 'preact/compat';
 import { t } from 'src/lang/helpers';
 
+import { showArchivedCardsMenu } from '../Archive/ArchiveMenu';
 import { Icon } from '../Icon/Icon';
 import { KanbanContext, SearchContext, SelectionContext } from '../context';
 import { c } from '../helpers';
@@ -15,13 +16,17 @@ export function SelectionBar() {
   const ids = useSelectedIds(selection);
   const board = stateManager.useState();
 
-  const { count, hidden } = useMemo(() => {
-    if (!board || !ids.size) return { count: 0, hidden: 0 };
+  const { count, hidden, isArchived } = useMemo(() => {
+    if (!board || !ids.size) return { count: 0, hidden: 0, isArchived: false };
     const selected = resolveSelection(board, ids);
+    if (!selected.length) {
+      const archivedCount = board.data.archive.filter((item) => ids.has(item.id)).length;
+      return { count: archivedCount, hidden: 0, isArchived: true };
+    }
     const hidden = search?.query
       ? selected.filter(({ item }) => !search.items.has(item)).length
       : 0;
-    return { count: selected.length, hidden };
+    return { count: selected.length, hidden, isArchived: false };
   }, [board, ids, search]);
 
   if (!selection || !count) return null;
@@ -37,10 +42,12 @@ export function SelectionBar() {
           className={c('selection-bar-button')}
           onClick={(e) => {
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            showBulkMenu(
-              { x: rect.left, y: rect.top },
-              { stateManager, boardModifiers, selection }
-            );
+            const position = { x: rect.left, y: rect.top };
+            if (isArchived) {
+              showArchivedCardsMenu(position, { stateManager, boardModifiers, ids });
+            } else {
+              showBulkMenu(position, { stateManager, boardModifiers, selection });
+            }
           }}
         >
           {t('Actions')}

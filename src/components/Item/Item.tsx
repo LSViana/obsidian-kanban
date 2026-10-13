@@ -16,9 +16,10 @@ import { DndManagerContext } from 'src/dnd/components/context';
 import { useDragHandle } from 'src/dnd/managers/DragManager';
 import { frontmatterKey } from 'src/parsers/common';
 
+import { showArchivedCardsMenu } from '../Archive/ArchiveMenu';
 import { showBulkMenu } from '../Selection/BulkMenu';
 import { useIsSelected } from '../Selection/SelectionManager';
-import { KanbanContext, SearchContext, SelectionContext } from '../context';
+import { ArchivedItemContext, KanbanContext, SearchContext, SelectionContext } from '../context';
 import { c } from '../helpers';
 import { EditState, EditingState, Item, isEditing } from '../types';
 import { CardModalPortal, INTERACTIVE_SELECTOR, useOpenCardOnClick } from './CardModal';
@@ -45,7 +46,7 @@ export interface ItemInnerProps {
   searchQuery?: string;
 }
 
-const ItemInner = memo(function ItemInner({
+export const ItemInner = memo(function ItemInner({
   item,
   shouldMarkItemsComplete,
   isMatch,
@@ -53,6 +54,7 @@ const ItemInner = memo(function ItemInner({
   isStatic,
 }: ItemInnerProps) {
   const { stateManager, boardModifiers } = useContext(KanbanContext);
+  const isArchived = useContext(ArchivedItemContext);
   const [editState, setEditState] = useState<EditState>(EditingState.cancel);
   const [isCardOpen, setIsCardOpen] = useState(false);
 
@@ -180,6 +182,21 @@ const ItemInner = memo(function ItemInner({
   // Opening the menu of a card outside the selection replaces the selection.
   const showMenu = useCallback(
     (e: MouseEvent) => {
+      if (isArchived) {
+        const actsOnSelection = !!selection && selection.size > 1 && selection.has(item.id);
+        if (selection?.size && !selection.has(item.id)) selection.clear();
+        showArchivedCardsMenu(
+          { x: e.clientX, y: e.clientY },
+          {
+            stateManager,
+            boardModifiers,
+            ids: actsOnSelection ? selection.getIds() : new Set([item.id]),
+            openCard,
+            editCard: () => setEditState({ x: 0, y: 0 }),
+          }
+        );
+        return;
+      }
       if (selection && !isStatic) {
         if (selection.size > 1 && selection.has(item.id)) {
           showBulkMenu({ x: e.clientX, y: e.clientY }, { stateManager, boardModifiers, selection });
@@ -189,7 +206,7 @@ const ItemInner = memo(function ItemInner({
       }
       showItemMenu(e);
     },
-    [selection, isStatic, item.id, stateManager, boardModifiers, showItemMenu]
+    [selection, isStatic, isArchived, item.id, stateManager, boardModifiers, showItemMenu, openCard]
   );
 
   // Ctrl/Cmd+click toggles the card in the selection. A plain click clears the selection.
@@ -238,6 +255,8 @@ const ItemInner = memo(function ItemInner({
   const onDoubleClick: JSX.MouseEventHandler<HTMLDivElement> = useCallback(
     (e) => {
       cancelPendingOpen();
+      // Modifier clicks select cards, so they never start editing
+      if (Keymap.isModifier(e, 'Mod') || e.shiftKey) return;
       setEditState({ x: e.clientX, y: e.clientY });
     },
     [setEditState, cancelPendingOpen]
