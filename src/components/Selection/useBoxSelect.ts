@@ -92,14 +92,22 @@ export function useBoxSelect(view: KanbanView, selection: SelectionManager, enab
           if (intersects(rect, el.getBoundingClientRect())) hits.add(el.dataset.selectableId);
         });
 
+        // A selection holds archived cards or list cards, not both. The kind most hits belong
+        // to wins for the whole box, so the result does not flip between frames.
+        const keepArchived = hits.size ? selection.isMostlyArchived(hits) : undefined;
+        const sameKindBase =
+          keepArchived === undefined
+            ? base
+            : new Set([...base].filter((id) => selection.isArchivedId(id) === keepArchived));
+
         if (mode === 'replace') {
-          selection.set(hits);
+          selection.set(hits, keepArchived);
         } else if (mode === 'add') {
-          selection.set([...base, ...hits]);
+          selection.set([...sameKindBase, ...hits], keepArchived);
         } else {
-          const next = new Set(base);
+          const next = new Set(sameKindBase);
           hits.forEach((id) => (next.has(id) ? next.delete(id) : next.add(id)));
-          selection.set(next);
+          selection.set(next, keepArchived);
         }
       };
 

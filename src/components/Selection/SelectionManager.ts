@@ -32,18 +32,30 @@ export class SelectionManager {
     return this.ids.has(id);
   }
 
+  isArchivedId(id: string) {
+    return this.archivedIds.has(id);
+  }
+
+  // True when most of the given ids are archived cards
+  isMostlyArchived(ids: Iterable<string>) {
+    const list = [...ids];
+    return list.filter((id) => this.archivedIds.has(id)).length * 2 > list.length;
+  }
+
   getIds() {
     return new Set(this.ids);
   }
 
-  set(ids: Iterable<string>) {
+  // keepArchived picks which kind of card the selection keeps. Without it, newly added
+  // cards decide, so selecting a card of the other kind replaces the selection.
+  set(ids: Iterable<string>, keepArchived?: boolean) {
     let next = new Set(ids);
 
-    // Newly added cards decide which kind the selection keeps; the other kind is dropped
     const added = [...next].filter((id) => !this.ids.has(id));
-    if (added.length) {
-      const archivedCount = added.filter((id) => this.archivedIds.has(id)).length;
-      const keepArchived = archivedCount * 2 > added.length;
+    if (keepArchived === undefined && added.length) {
+      keepArchived = this.isMostlyArchived(added);
+    }
+    if (keepArchived !== undefined) {
       next = new Set([...next].filter((id) => this.archivedIds.has(id) === keepArchived));
     }
 
