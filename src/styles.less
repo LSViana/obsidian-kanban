@@ -1153,9 +1153,19 @@ button.kanban-plugin__item-postfix-button.is-enabled,
   line-height: var(--line-height-tight);
 }
 
+.kanban-plugin__action-confirm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  button {
+    flex: 1 1 auto;
+    margin: 0;
+  }
+}
+
 button.kanban-plugin__confirm-action-button {
   border: 1px solid rgba(var(--background-modifier-error-rgb), 0.2);
-  margin-inline-end: 5px;
   color: var(--text-error);
 
   &:hover {

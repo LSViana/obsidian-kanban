@@ -48,7 +48,7 @@ export function ConfirmAction({ action, cancel, onAction, lane }: ConfirmActionP
   return (
     <div className={c('action-confirm-wrapper')}>
       <div className={c('action-confirm-text')}>{actionLabels[action].description}</div>
-      <div>
+      <div className={c('action-confirm-buttons')}>
         <button onClick={onAction} className={c('confirm-action-button')}>
           {actionLabels[action].confirm}
         </button>
