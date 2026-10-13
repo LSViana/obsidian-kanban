@@ -699,6 +699,8 @@ button.kanban-plugin__lane-settings-button + button.kanban-plugin__lane-settings
 button.kanban-plugin__new-item-button {
   background-color: transparent;
   color: var(--text-muted);
+  // Obsidian buttons are flex containers, which drop the space between "+" and the label.
+  gap: var(--size-4-1);
 }
 
 .kanban-plugin__new-item-button:hover {
