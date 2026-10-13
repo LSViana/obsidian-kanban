@@ -336,6 +336,7 @@ const en = {
   'Show archived cards': 'Show archived cards',
   'Hide archived cards': 'Hide archived cards',
   'No archived cards': 'No archived cards',
+  "Cards can't be archived by drag.": "Cards can't be archived by drag.",
   'Unarchive card': 'Unarchive card',
   'Unarchive cards': 'Unarchive cards',
   Unarchive: 'Unarchive',

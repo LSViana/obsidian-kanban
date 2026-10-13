@@ -595,10 +595,31 @@ button.kanban-plugin__lane-settings-button + button.kanban-plugin__lane-settings
 
 .kanban-plugin__archive-lane {
   max-height: 100%;
+  position: relative;
 
   .kanban-plugin__lane-header-wrapper {
     color: var(--text-muted);
   }
+}
+
+// Shown while a card is dragged over the Archived column, which takes no drops
+.kanban-plugin__archive-lane-drop-note {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: inherit;
+  background-color: color-mix(in srgb, var(--background-primary) 80%, transparent);
+  backdrop-filter: blur(1px);
+  color: var(--text-normal);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  text-wrap: balance;
+  pointer-events: none;
 }
 
 .kanban-plugin__archive-lane-items {

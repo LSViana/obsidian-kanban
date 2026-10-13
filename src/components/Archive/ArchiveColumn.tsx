@@ -1,5 +1,7 @@
 import classcat from 'classcat';
 import { memo, useContext, useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { DndManagerContext } from 'src/dnd/components/context';
+import { DragEventData } from 'src/dnd/managers/DragManager';
 import { t } from 'src/lang/helpers';
 
 import { Icon } from '../Icon/Icon';
@@ -8,7 +10,7 @@ import { getItemClassModifiers } from '../Item/helpers';
 import { useIsSelected } from '../Selection/SelectionManager';
 import { ArchivedItemContext, KanbanContext, SearchContext, SelectionContext } from '../context';
 import { c } from '../helpers';
-import { Item } from '../types';
+import { DataTypes, Item } from '../types';
 import { showArchiveColumnMenu } from './ArchiveMenu';
 
 const PAGE_SIZE = 20;
@@ -55,6 +57,39 @@ export function ArchiveColumn() {
 
   const listRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const laneRef = useRef<HTMLDivElement>(null);
+
+  // Cards can't be dropped here. While one is dragged over the column, say so.
+  const dndManager = useContext(DndManagerContext);
+  const [isCardOver, setIsCardOver] = useState(false);
+  useEffect(() => {
+    if (!dndManager) return;
+    const emitter = dndManager.dragManager.emitter;
+
+    const onDragMove = ({ dragEntity, dragPosition }: DragEventData) => {
+      const el = laneRef.current;
+      const data = dragEntity?.getData();
+      if (!el || !dragPosition || data?.type !== DataTypes.Item || data.win !== el.win) {
+        setIsCardOver(false);
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      setIsCardOver(
+        dragPosition.x >= rect.left &&
+          dragPosition.x <= rect.right &&
+          dragPosition.y >= rect.top &&
+          dragPosition.y <= rect.bottom
+      );
+    };
+    const onDragEnd = () => setIsCardOver(false);
+
+    emitter.on('dragMove', onDragMove);
+    emitter.on('dragEnd', onDragEnd);
+    return () => {
+      emitter.off('dragMove', onDragMove);
+      emitter.off('dragEnd', onDragEnd);
+    };
+  }, [dndManager]);
 
   const archive = board?.data.archive ?? [];
   const query = search?.query;
@@ -94,7 +129,10 @@ export function ArchiveColumn() {
       className={classcat([c('lane-wrapper'), c('archive-lane-wrapper')])}
       style={laneWidth ? { width: `${laneWidth}px` } : undefined}
     >
-      <div className={classcat([c('lane'), c('archive-lane')])}>
+      <div ref={laneRef} className={classcat([c('lane'), c('archive-lane')])}>
+        {isCardOver && (
+          <div className={c('archive-lane-drop-note')}>{t("Cards can't be archived by drag.")}</div>
+        )}
         <div className={c('lane-header-wrapper')}>
           <Icon name="lucide-archive" />
           <div className={c('lane-title')}>
