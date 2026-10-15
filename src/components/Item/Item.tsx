@@ -1,6 +1,7 @@
 import classcat from 'classcat';
 import { Keymap } from 'obsidian';
 import {
+  Fragment,
   JSX,
   memo,
   useCallback,
@@ -30,12 +31,14 @@ import { useItemMenu } from './ItemMenu';
 import { ItemMenuButton } from './ItemMenuButton';
 import { ItemMetadata } from './MetadataTable';
 import { getItemClassModifiers } from './helpers';
+import { ItemNest, getLaneNesting } from './nesting';
 
 export interface DraggableItemProps {
   item: Item;
   itemIndex: number;
   isStatic?: boolean;
   shouldMarkItemsComplete?: boolean;
+  nest?: ItemNest;
 }
 
 export interface ItemInnerProps {
@@ -316,13 +319,14 @@ export const DraggableItem = memo(function DraggableItem(props: DraggableItemPro
   const search = useContext(SearchContext);
   const selection = useContext(SelectionContext);
 
-  const { itemIndex, ...innerProps } = props;
+  const { itemIndex, nest, ...innerProps } = props;
 
   const bindHandle = useDragHandle(measureRef, measureRef);
   const isSelected = useIsSelected(props.isStatic ? null : selection, props.item.id);
 
   const isMatch = search?.query ? innerProps.item.data.titleSearch.includes(search.query) : false;
   const classModifiers: string[] = getItemClassModifiers(innerProps.item);
+  const depth = nest?.depth ?? 0;
 
   return (
     <div
@@ -330,9 +334,36 @@ export const DraggableItem = memo(function DraggableItem(props: DraggableItemPro
         measureRef.current = el;
         bindHandle(el);
       }}
-      className={c('item-wrapper')}
+      className={classcat([c('item-wrapper'), { [c('is-nested')]: depth > 0 }])}
+      style={depth > 0 ? { '--kanban-nest-depth': depth } : undefined}
       data-selectable-id={props.isStatic || !selection ? undefined : props.item.id}
     >
+      {depth > 0 && (
+        <div className={c('nest-lines')} aria-hidden="true">
+          {nest.laterSiblings.map((later, i) => {
+            const level = i + 1;
+            const offset = { '--kanban-nest-offset': depth - level + 1 };
+            return (
+              <Fragment key={level}>
+                {later.length > 0 && (
+                  <span
+                    className={classcat([c('nest-line'), 'is-stem'])}
+                    data-nest-links={later.join(' ')}
+                    style={offset}
+                  />
+                )}
+                {level === depth && (
+                  <span
+                    className={classcat([c('nest-line'), 'is-curve'])}
+                    data-nest-links={props.item.id}
+                    style={offset}
+                  />
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
+      )}
       <div
         ref={elementRef}
         className={classcat([c('item'), ...classModifiers, { 'is-selected': isSelected }])}
@@ -371,16 +402,27 @@ export const Items = memo(function Items({ isStatic, items, shouldMarkItemsCompl
   const { view } = useContext(KanbanContext);
   const boardView = view.useViewState(frontmatterKey);
 
+  const visibleItems = useMemo(
+    () => (search?.query ? items.filter((item) => search.items.has(item)) : items),
+    [items, search]
+  );
+  const nesting = useMemo(() => {
+    const nests = getLaneNesting(visibleItems);
+    return new Map(visibleItems.map((item, i) => [item.id, nests[i]]));
+  }, [visibleItems]);
+
   return (
     <>
       {items.map((item, i) => {
-        return search?.query && !search.items.has(item) ? null : (
+        if (search?.query && !search.items.has(item)) return null;
+        return (
           <DraggableItem
             key={boardView + item.id}
             item={item}
             itemIndex={i}
             shouldMarkItemsComplete={shouldMarkItemsComplete}
             isStatic={isStatic}
+            nest={nesting?.get(item.id)}
           />
         );
       })}

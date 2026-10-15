@@ -64,8 +64,8 @@
     {
       "id": "feat-007",
       "name": "Parent and child cards",
-      "description": "Child stores `parent:: [[#^id]]` pointing at parent block ID. Parent badge + children badge (n/m done). Hover parent badge highlights card, siblings, ancestors; hover n/m badge highlights card + all descendants. Menu: Add child card, Set parent..., Remove parent. Click n/m badge lists children by lane + archived, jump or check off. New child opens with room to type; empty or Escape removes it. Setting 'count-archived-children-as-done', default off.",
-      "files": ["src/components/Item/FamilyBadges.tsx (getFamilyIndex, FamilyBadges, addFamilyMenuItems)", "src/components/Item/ParentPickerModal.ts", "src/components/Item/ChildListPopover.ts (openChildList, toggleChildList)", "src/components/Item/ItemContent.tsx", "src/parsers/formats/list.ts", "src/Settings.ts", "src/styles.less"],
+      "description": "Child stores `parent:: [[#^id]]` pointing at parent block ID. Parent badge + children badge (n/m done). Hover parent badge highlights card, siblings, ancestors; hover n/m badge highlights card + all descendants. Children right below parent in same lane (no unrelated card between) indent 12px per level with tree lines; board view only. Menu: Add child card, Set parent..., Remove parent. Click n/m badge lists children by lane + archived, jump or check off. New child opens with room to type; empty or Escape removes it. Setting 'count-archived-children-as-done', default off.",
+      "files": ["src/components/Item/FamilyBadges.tsx (getFamilyIndex, FamilyBadges, addFamilyMenuItems)", "src/components/Item/ParentPickerModal.ts", "src/components/Item/ChildListPopover.ts (openChildList, toggleChildList)", "src/components/Item/nesting.ts (getLaneNesting)", "src/components/Item/Item.tsx (Items, DraggableItem nest)", "src/components/Item/ItemContent.tsx", "src/parsers/formats/list.ts", "src/Settings.ts", "src/styles.less"],
       "commits": ["9923a5a", "44ba72e", "cf31754", "61bfb47"],
       "dependencies": [],
       "status": "done",

@@ -215,6 +215,12 @@ function setHighlight(el: HTMLElement, ids: HighlightIds | null) {
     const set = badge.dataset.familyRole === 'children' ? ids?.children : ids?.parent;
     badge.toggleClass(highlightClass, !!set?.has(badge.dataset.familyId));
   });
+
+  // Tree lines between nested cards light up with the child cards they lead to
+  root.querySelectorAll<HTMLElement>(`.${c('nest-line')}`).forEach((line) => {
+    const links = line.dataset.nestLinks?.split(' ') ?? [];
+    line.toggleClass(highlightClass, !!ids && links.some((id) => ids.parent.has(id)));
+  });
 }
 
 export function scrollToCard(el: HTMLElement, id: string) {

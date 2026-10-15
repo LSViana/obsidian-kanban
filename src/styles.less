@@ -2168,6 +2168,57 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   min-width: 0;
 }
 
+// Child cards nested under their parent when they sit right below it (K47)
+.kanban-plugin__item-wrapper.kanban-plugin__is-nested {
+  --kanban-nest-indent: 12px;
+  --kanban-nest-inset: 4px;
+  --kanban-nest-gap: 4px;
+  --kanban-nest-radius: 4px;
+  --kanban-nest-line: 1px;
+  --kanban-nest-title-y: calc(8px + 0.4375rem * var(--line-height-tight));
+  position: relative;
+  margin-inline-start: calc(var(--kanban-nest-depth) * var(--kanban-nest-indent));
+}
+
+.kanban-plugin__nest-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+// Lines start 4px right of the left border of the ancestor card at their level
+.kanban-plugin__nest-line {
+  position: absolute;
+  top: calc(var(--kanban-nest-gap) * -1);
+  left: calc(
+    var(--kanban-nest-offset) * var(--kanban-nest-indent) * -1 + var(--kanban-nest-inset)
+  );
+  box-sizing: border-box;
+  border-color: var(--background-modifier-border-hover);
+  border-style: solid;
+  border-width: 0;
+
+  // Straight line that runs past this card to later sibling cards
+  &.is-stem {
+    height: calc(100% + var(--kanban-nest-gap));
+    border-left-width: var(--kanban-nest-line);
+  }
+
+  // Line that comes down and turns into this card's title
+  &.is-curve {
+    width: calc(var(--kanban-nest-indent) - var(--kanban-nest-inset));
+    height: calc(var(--kanban-nest-title-y) + var(--kanban-nest-gap));
+    border-left-width: var(--kanban-nest-line);
+    border-bottom-width: var(--kanban-nest-line);
+    border-bottom-left-radius: var(--kanban-nest-radius);
+  }
+
+  &.is-family-highlight {
+    z-index: 1;
+    border-color: var(--interactive-accent);
+  }
+}
+
 .kanban-plugin__item-content-wrapper.kanban-plugin__opens-on-click {
   cursor: pointer;
 }
