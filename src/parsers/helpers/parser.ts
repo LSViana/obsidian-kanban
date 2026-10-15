@@ -36,19 +36,38 @@ export function indentNewLines(str: string) {
   return str.trim().replace(/(?:\r\n|\n)/g, useTab ? '\n\t' : '\n    ');
 }
 
+// Lines that start a new markdown block (list, heading, quote, code fence, table)
+const blockStartRegex = /^\s*(?:[-*+]\s|\d+[.)]\s|#{1,6}\s|>|```|~~~|\|)/;
+
+// Index of the last line of the card's first paragraph. A block ID only works
+// (and is only hidden by Obsidian) at the end of a paragraph, not mid-paragraph.
+function getFirstParagraphEnd(lines: string[]) {
+  let end = 0;
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim() || blockStartRegex.test(lines[i])) break;
+    end = i;
+  }
+  return end;
+}
+
 export function addBlockId(str: string, item: Item) {
   if (!item.data.blockId) return str;
 
   const lines = str.split(/(?:\r\n|\n)/g);
-  lines[0] += ' ^' + item.data.blockId;
+  lines[getFirstParagraphEnd(lines)] += ' ^' + item.data.blockId;
 
   return lines.join('\n');
 }
 
 export function removeBlockId(str: string) {
   const lines = str.split(/(?:\r\n|\n)/g);
+  const end = getFirstParagraphEnd(lines);
 
-  lines[0] = lines[0].replace(/\s+\^([a-zA-Z0-9-]+)$/, '');
+  // Older versions wrote the ID at the end of the first line, so check every line
+  // of the first paragraph
+  for (let i = 0; i <= end; i++) {
+    lines[i] = lines[i].replace(/\s+\^([a-zA-Z0-9-]+)$/, '');
+  }
 
   return lines.join('\n');
 }
